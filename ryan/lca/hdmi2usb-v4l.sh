@@ -1,6 +1,6 @@
 #!/bin/bash
     gst-launch-1.0 \
-        v4l2src device=/dev/video1 !\
+        v4l2src device=/dev/video0 !\
             image/jpeg,width=1280,height=720 !\
             jpegdec !\
             videoconvert !\
@@ -9,7 +9,7 @@
             queue !\
             mux. \
         \
-        alsasrc device='hw:0,0' !\
+        alsasrc device='hw:1,0' !\
             audio/x-raw,format=S16LE,channels=2,layout=interleaved,rate=48000 !\
             queue !\
             mux. \
