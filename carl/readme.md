@@ -4,3 +4,5 @@ source-avsync-test-clip-looped-as-cam-x.sh
 v3test.sh - runs 3 avsync-test loops
 vcore.sh - runs core with config.ini
 vui.sh - runs gui 
+generate-cut-list.sh - logs to cut-list.txt 
+
