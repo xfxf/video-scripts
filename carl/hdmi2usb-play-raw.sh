@@ -9,7 +9,7 @@
             queue !\
             mux. \
         \
-        alsasrc device='hw:0,0' !\
+        audiotestsrc !\
             audio/x-raw,format=S16LE,channels=2,layout=interleaved,rate=48000 !\
             queue !\
             mux. \
