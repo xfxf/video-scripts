@@ -12,5 +12,6 @@ source-avsync-test-clip-looped-as-cam-x.sh
 generate-cut-list.sh - displays times to screen and logs to cut-list.txt 
 
 # to save to disk
+~/lca/video-scripts/ryan/lca/record-timestamp.sh 
 ~/lca/voctomix/example-scripts/ffmpeg/record-mixed-ffmpeg-segmented.sh
 
