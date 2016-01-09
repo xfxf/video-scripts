@@ -1,4 +1,5 @@
-raw/*
+*.avi
+*.ts
 .idea
 *.mkv
 *.mp4
