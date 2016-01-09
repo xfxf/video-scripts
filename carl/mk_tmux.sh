@@ -6,7 +6,6 @@ tmux new -s v3
 tmux new -s hu
 tmux new -s save
 tmux new -s cut
-# tmux new -s clocky ./clocky.py
 
 tmux ls
 
