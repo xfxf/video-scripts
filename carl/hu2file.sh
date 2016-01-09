@@ -5,12 +5,13 @@ dir=$(date +%Y-%m-%d/atlys)
 
 dir=~/Videos
 
+# HDMI2USB=/dev/video0
 
 while [ 1 ]; do
 
 gst-launch-1.0 -v \
     --eos-on-shutdown \
-    v4l2src device=/dev/video0 \
+    v4l2src device=$HTMI2USB \
     ! image/jpeg,width=1280,height=720 \
       ! queue max-size-bytes=100000000 max-size-time=0 \
     ! matroskamux name=mux \
