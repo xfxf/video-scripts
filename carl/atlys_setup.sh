@@ -18,17 +18,18 @@ fxload -B libusb -D vid=0x16c0,pid=0x06ad -t fx2lp -I hdmi2usb.hex
 
 
 tee hdmi2usb.cmd <<EOT
-encoder on
-encoder quality 85
+video_mode 9
 video_matrix connect input1 output0
 video_matrix connect input1 output1
+encoder on
+encoder quality 85
 video_matrix connect input1 encoder
 status
-video_matrix connect pattern encoder
 EOT
+# video_matrix connect pattern encoder
 
 flterm --port /dev/ttyVIZ0 --speed 115200 < hdmi2usb.cmd
 
-mplayer tv:// -tv driver=v4l2:device=/dev/video1
+mplayer tv:// -tv driver=v4l2:device=$HDMI2USB
 
 
