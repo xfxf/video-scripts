@@ -2,6 +2,10 @@ config.ini
 
 ~/.bashrc  HDMI2USB=/dev/video0
 
+# to runn all the things:
+screen -c screenrc-ts
+
+
 hu2file.sh - Hdmi2Usb to file - simple gstreamer to save to disk
 
 vcore.sh - runs core with config.ini
