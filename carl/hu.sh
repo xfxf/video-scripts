@@ -10,11 +10,11 @@
             queue !\
             mux. \
         \
-        alsasrc device='hw:1,0' !\
+        audiotestsrc !\
             audio/x-raw,format=S16LE,channels=2,layout=interleaved,rate=48000 !\
             queue !\
             mux. \
         \
         matroskamux name=mux !\
-            tcpclientsink port=10000 host=localhost
+            tcpclientsink port=1000$1 host=localhost
 
