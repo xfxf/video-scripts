@@ -8,6 +8,8 @@ export GST_DEBUG=3
             jpegdec !\
             videoconvert !\
             videorate !\
+         tee name=t ! queue ! \
+            videoconvert ! autovideosink t. ! \
             video/x-raw,format=I420,width=1280,height=720,framerate=30/1,pixel-aspect-ratio=1/1 !\
             queue !\
             mux. \
