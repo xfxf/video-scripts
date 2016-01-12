@@ -1,0 +1,20 @@
+# don't display the copyright page
+startup_message off
+
+# increase scrollback buffer size
+defscrollback 10000
+
+# title of the session 
+sessionname tracker-scripts
+
+hardstatus alwayslastline
+hardstatus string '%{= kG}%-Lw%{= kW}%50> %n%f* %t%{= kG}%+Lw%< %{= kG}'
+
+screen -t core bash -c 'vcore.sh'
+screen -t vui bash -c  'sleep 1;vui.sh'
+screen -t hu bash -c   'sleep 1;hu-alsa.sh 0'
+screen -t test bash -c 'sleep 1;gst-test-src.sh 1'
+screen -t t2 bash -c  'sleep 1;source-avsync-test-clip-looped-as-cam-x.sh 2'
+screen -t save bash -c 'sleep 1;record-timestamp.sh'
+screen -t cut bash -c  'sleep 1;generate-cut-list.sh'
+

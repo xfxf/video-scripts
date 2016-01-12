@@ -1,0 +1,71 @@
+Session join:
+sudo su mazdermind
+script /dev/null
+screen -x
+
+Doku: https://github.com/voc/voctomix/tree/master/voctocore#block-level-diagram
+
+Core config liegt im voctrocore dir. Verhalten ist pyconfig "closest wins"
+unter /voctomix/example-scripts/ffmpeg liegen alle scripts die gestartet werden müssen
+== 0 core   
+After startup of the cube:
+
+PYTHON=python3 ~/gst/gst-master
+cd ~/voctomix/voctocore/
+while true; do DISPLAY=:0.0 ./voctocore.py -vv; sleep 3; done
+
+The core needs to be restarted twice a day to prevent audio delay, this is a known bug that needs to be fixed in gestreamer inter elements
+
+== 1 cam1
+cd ~/voctomix/example-scripts/ffmpeg/
+while true; do ./source-decklink-cam1.sh; sleep 3; done
+
+== 2 cam2
+cd ~/voctomix/example-scripts/ffmpeg/
+while true; do ./source-decklink-cam2.sh; sleep 3; done
+
+== 3 grabber
+cd ~/voctomix/example-scripts/ffmpeg/
+while true; do ./source-mjpg-framegrabber.sh; sleep 3; done
+
+== 4 bg
+cd ~/voctomix/example-scripts/ffmpeg/
+while true; do ./source-background-loop.sh; sleep 3; done
+
+== 5 recording
+cd ~/voctomix/example-scripts/ffmpeg/
+while true; do sudo ./record-mixed-ffmpeg-segmented-timestamps.sh; sleep 3; done
+
+== 6 streaming
+cd ~/voctomix/example-scripts/ffmpeg/
+while true; do ./stream-hd.sh; sleep 3; done
+
+== 7 nostream-pause  
+cd ~/voctomix/example-scripts/ffmpeg/
+while true; do ./source-nostream-pause-loop.sh; sleep 3; done
+
+== 8 nostream-music 
+cd ~/voctomix/example-scripts/ffmpeg/
+while true; do ./source-nostream-music.sh; sleep 3; done
+
+== 9 cmd  
+rlwrap telnet localhost 9999
+
+== 10 htop  
+htop
+
+
+
+
+
+
+on the mixer
+sudo su mixer
+sv stop ~/services/dvswitch/
+PYTHON=python3 ~/gst/gst-master
+cd ~/voctomix/voctogui/
+while true; do DISPLAY=:0.0 ./voctogui.py -vv; sleep 3; done
+
+F1 bis F4 für Composition modes
+1 bis 3 für Quelle A
+Ctrl-1 bis Ctrl-3 für Quelle B

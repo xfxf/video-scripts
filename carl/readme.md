@@ -1,19 +1,21 @@
-Instructions:
-
-contents of this folder should be in ~/lca/video-scripts/carl/
-voctomix should be in ~/lca/voctomix
-copy in config.ini in this directory to ~/lca/voctocore/
-
-run in different Terminals:
- * vcore.sh
- * vui.sh
- * other scripts below to test inputs, and save output
-
 config.ini 
+
+~/.bashrc  HDMI2USB=/dev/video0
+
+# to runn all the things:
+screen -c screenrc-ts
+
+
 hu2file.sh - Hdmi2Usb to file - simple gstreamer to save to disk
-source-avsync-test-clip-looped-as-cam-x.sh 
-v3test.sh - runs 3 avsync-test loops
+
 vcore.sh - runs core with config.ini
 vui.sh - runs gui 
-generate-cut-list.sh - logs to cut-list.txt 
+v123test.sh - runs 3 avsync-test loops
+source-avsync-test-clip-looped-as-cam-x.sh 
+
+generate-cut-list.sh - displays times to screen and logs to cut-list.txt 
+
+# to save to disk
+~/lca/video-scripts/ryan/lca/record-timestamp.sh 
+~/lca/voctomix/example-scripts/ffmpeg/record-mixed-ffmpeg-segmented.sh
 
