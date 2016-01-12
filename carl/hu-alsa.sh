@@ -1,6 +1,6 @@
 #!/bin/bash -ex
 
-export GST_DEBUG=3 
+# export GST_DEBUG=3 
 
     gst-launch-1.0 -v \
         v4l2src device=$HDMI2USB !\
@@ -14,7 +14,7 @@ export GST_DEBUG=3
             queue !\
             mux. \
         \
-        alsasrc device='hw:1,0' !\
+        alsasrc device='hw:1,0' provide-clock=false !\
             audio/x-raw,format=S16LE,channels=2,layout=interleaved,rate=48000 !\
             queue !\
             mux. \
