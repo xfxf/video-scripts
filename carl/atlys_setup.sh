@@ -16,7 +16,7 @@ openocd -f board/digilent_atlys.cfg -c "init; pld load 0 atlys_hdmi2usb-hdmi2usb
 
 fxload -B libusb -D vid=0x16c0,pid=0x06ad -t fx2lp -I hdmi2usb.hex
 
-
+cd
 tee hdmi2usb.cmd <<EOT
 video_mode 9
 video_matrix connect input1 output0
@@ -24,9 +24,9 @@ video_matrix connect input1 output1
 encoder on
 encoder quality 85
 video_matrix connect input1 encoder
-status
 EOT
 # video_matrix connect pattern encoder
+# status
 
 flterm --port /dev/ttyVIZ0 --speed 115200 < hdmi2usb.cmd
 
