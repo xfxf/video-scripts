@@ -1,7 +1,18 @@
 #!/bin/bash
 
+function find_hdmi2usb() {
+    for V in /dev/video*; do
+	if v4l-info $V | grep 'HDMI2USB' > /dev/null 2>&1; then
+		echo $V
+		break
+	fi
+    done
+}
+
+    echo "HDMI2USB is $(find_hdmi2usb)"
+
     gst-launch-1.0 \
-        v4l2src device=/dev/video1 !\
+        v4l2src device=$(find_hdmi2usb) !\
             image/jpeg,width=1280,height=720 !\
             jpegdec !\
             videoconvert !\
@@ -10,8 +21,7 @@
             queue !\
             mux. \
         \
-        alsasrc device='hw:1,0' provide-clock=false !\
-            audio/x-raw,format=S16LE,channels=2,layout=interleaved,rate=48000 !\
+        audiotestsrc  wave=silence !\
             queue !\
             mux. \
         \
