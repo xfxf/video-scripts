@@ -26,5 +26,5 @@ function find_hdmi2usb() {
             mux. \
         \
         matroskamux name=mux !\
-            tcpclientsink port=10001 host=192.168.227.136
+            tcpclientsink port=10001 host=localhost
 

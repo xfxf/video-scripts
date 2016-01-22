@@ -1,8 +1,7 @@
 #!/bin/bash
-
     gst-launch-1.0 \
-        v4l2src device=/dev/video1 !\
-            image/jpeg,width=1280,height=720 !\
+        multifilesrc location="$1" loop=true !\
+            jpegparse !\
             jpegdec !\
             videoconvert !\
             videorate !\
@@ -10,11 +9,11 @@
             queue !\
             mux. \
         \
-        alsasrc device='hw:1,0' provide-clock=false !\
+        audiotestsrc !\
             audio/x-raw,format=S16LE,channels=2,layout=interleaved,rate=48000 !\
             queue !\
             mux. \
         \
         matroskamux name=mux !\
-            tcpclientsink port=10001 host=192.168.227.136
+            tcpclientsink port=10001 host=localhost
 
