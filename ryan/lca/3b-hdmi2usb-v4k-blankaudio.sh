@@ -1,9 +1,10 @@
-#!/bin/bash
+#!/bin/bash -e
 
-#v4l2-ctl --set-fmt-video=width=1280,height=720,pixelformat=2 --set-parm=30
+SRC="$(dirname $(realpath ${BASH_SOURCE[@]}))"
+source $SRC/A-variables.sh
 
     gst-launch-1.0 \
-        v4l2src device=/dev/video0 !\
+        v4l2src device=$DEVICE !\
             image/jpeg,width=1280,height=720 !\
             jpegdec !\
             videoconvert !\
@@ -18,5 +19,5 @@
             mux. \
         \
         matroskamux name=mux !\
-            tcpclientsink port=10001 host=localhost
+            tcpclientsink port=$PORT host=$VOCTOCOREIP
 
