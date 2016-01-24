@@ -1,9 +1,7 @@
-#!/bin/bash
+#!/bin/bash -ex
 
-v4l2-ctl --set-fmt-video=width=1280,height=720,pixelformat=2 --set-parm=30
-
-    gst-launch-1.0 \
-        v4l2src device=/dev/video0 !\
+    gst-launch-1.0 -v \
+        v4l2src device=$HDMI2USB !\
             image/jpeg,width=1280,height=720 !\
             jpegdec !\
             videoconvert !\
@@ -12,11 +10,11 @@ v4l2-ctl --set-fmt-video=width=1280,height=720,pixelformat=2 --set-parm=30
             queue !\
             mux. \
         \
-        alsasrc device='hw:1,0' !\
+        audiotestsrc !\
             audio/x-raw,format=S16LE,channels=2,layout=interleaved,rate=48000 !\
             queue !\
             mux. \
         \
         matroskamux name=mux !\
-            tcpclientsink port=10000 host=localhost
+            tcpclientsink port=1000$1 host=localhost
 

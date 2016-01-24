@@ -20,5 +20,5 @@
             mux. \
         \
         matroskamux name=mux !\
-            tcpclientsink port=10001 host=192.168.227.136
+            tcpclientsink port=10000 host=localhost
 

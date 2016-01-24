@@ -1,18 +1,10 @@
-#!/bin/bash
+#!/bin/bash -e
 
-function find_hdmi2usb() {
-    for V in /dev/video*; do
-	if v4l-info $V | grep 'HDMI2USB' > /dev/null 2>&1; then
-		echo $V
-		break
-	fi
-    done
-}
-
-    echo "HDMI2USB is $(find_hdmi2usb)"
+SRC="$(dirname $(realpath ${BASH_SOURCE[@]}))"
+source $SRC/A-variables.sh
 
     gst-launch-1.0 \
-        v4l2src device=$(find_hdmi2usb) !\
+        v4l2src device=$DEVICE !\
             image/jpeg,width=1280,height=720 !\
             jpegdec !\
             videoconvert !\
@@ -21,10 +13,11 @@ function find_hdmi2usb() {
             queue !\
             mux. \
         \
-        audiotestsrc  wave=silence !\
+        alsasrc device='hw:1,0' !\
+            audio/x-raw,format=S16LE,channels=2,layout=interleaved,rate=48000 !\
             queue !\
             mux. \
         \
         matroskamux name=mux !\
-            tcpclientsink port=10001 host=localhost
+            tcpclientsink port=$PORT host=$VOCTOCOREIP
 

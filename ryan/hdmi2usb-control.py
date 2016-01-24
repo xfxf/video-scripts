@@ -2,7 +2,7 @@
 import serial
 import Tkinter
 
-SERIAL = "/dev/ttyVIZ0"
+SERIAL = "/dev/ttyACM0"
 EXPECT = "HDMI2USB>"
 INIT = """
 video_mode 10
