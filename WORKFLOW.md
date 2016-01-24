@@ -39,7 +39,7 @@ cd ~/lca/example
 git pull
 ```
 
-## Rolling back to a particular commit
+## Rolling back a particular commit
 
 You will need to know the commit ID you want to revert.  You can also revert multiple commits by specifying multiple at the command line.
 
