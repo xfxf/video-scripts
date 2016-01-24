@@ -76,6 +76,10 @@ $ git revert 98598b8
  1 file changed, 1 insertion(+), 1 deletion(-)
 $ cat foo
 good
+$ git log --oneline --graph --decorate
+* 848314f (HEAD -> master) Revert "foo 2"
+* 98598b8 foo 2
+* d196dcc fooo
 $ git push
 ```
 
