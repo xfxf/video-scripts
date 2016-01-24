@@ -15,7 +15,7 @@ sleep 2
 $SRC/1-vcore.sh &
 sleep 5
 $SRC/2-vgui.sh &
-$SRC/3-hdmi2usb-v4l-alsa.sh &
+$SRC/$SCRIPT &
 $SRC/4-remote.sh &
 
 while [ -x /dev ];
