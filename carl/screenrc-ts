@@ -10,11 +10,13 @@ sessionname tracker-scripts
 hardstatus alwayslastline
 hardstatus string '%{= kG}%-Lw%{= kW}%50> %n%f* %t%{= kG}%+Lw%< %{= kG}'
 
-screen -t core bash -c './vcore.sh'
-screen -t vui bash -c  'sleep 1;./vui.sh'
-screen -t hu bash -c   'sleep 1;./hu-alsa.sh 0'
-screen -t test bash -c 'sleep 1;./gst-test-src.sh 1'
-screen -t t2 bash -c  'sleep 1;./source-avsync-test-clip-looped-as-cam-x.sh 2'
-screen -t save bash -c 'sleep 1;./record-timestamp.sh'
-screen -t cut bash -c  'sleep 1;./generate-cut-list.sh'
+screen -t core bash -c 'while true; do ./vcore.sh; sleep 1; done'
+screen -t vui bash -c  'while true; do ./vui.sh; sleep 1; done'
+
+screen -t hu bash -c   'while true; do ./hu-alsa.sh 0; sleep 1; done'
+screen -t test bash -c 'while true; do ./gst-test-src.sh 1; sleep 1; done'
+screen -t t2 bash -c   'while true; do ./source-avsync-test-clip-looped-as-cam-x.sh 2; sleep 1; done'
+
+screen -t save bash -c 'while true; do ./record-timestamp.sh; sleep 1; done'
+screen -t cut bash -c  'sleep 2; while true; do ./generate-cut-list.sh; sleep 1; done'
 
