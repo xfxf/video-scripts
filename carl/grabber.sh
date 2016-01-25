@@ -5,7 +5,7 @@
 
 while true; do
 
-    gst-launch-1.0 -v \
+    gst-launch-1.0 \
         v4l2src device=$HDMI2USB !\
             image/jpeg,width=1280,height=720 !\
             jpegdec !\
@@ -23,7 +23,7 @@ while true; do
             mux. \
         \
         matroskamux name=mux !\
-            tcpclientsink port=10000 host=$VOC_CORE
+            tcpclientsink port=1000$1 host=$VOC_CORE
 
     sleep 1
 
