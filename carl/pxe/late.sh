@@ -275,13 +275,13 @@ chown -R $nuser:$nuser .ssh
 # make time command report just total seconds.
 printf "\nTIMEFORMAT=%%E\n" >> .bashrc
 # printf "\nexport DISPLAY=:0.0\n" >> .bashrc
-printf "\nexport HDMI2USB=/dev/video0\n" >> .bashrc
 
 printf "\n# Vocto settings:\n" >> .bashrc
+printf "\nexport HDMI2USB=/dev/video0\n" >> .bashrc
 printf "\n# For slave, replace this with hostname of box running vocto core\n" >> .bashrc
 printf "export VOC_CORE=localhost\n" >> .bashrc
-printf "\n# for core, hostname of box running grabber\n" >> .bashrc
-printf "export VOC_SLAVE=\n" >> .bashrc
+# printf "\n# for core, hostname of box running grabber\n" >> .bashrc
+# printf "export VOC_SLAVE=\n" >> .bashrc
 
 ## create ~/bin
 # ~/bin gets added to PATH if it exists when the shell is started.
@@ -342,12 +342,14 @@ git clone http://$SHAZ/git/voctomix.git
 git clone http://$SHAZ/git/clocky.git
 
 wget http://$SHAZ/lc/Desktop/dsotm.png 
+wget http://$SHAZ/lc/Desktop/GRABBER.png 
+wget http://$SHAZ/avsync.ts
 
 # install melt encoder
 wget http://$SHAZ/lc/shotcut-debian7-x86_64-160102.tar.bz2
 tar xvf shotcut-debian7-x86_64-160102.tar.bz2
 cd ../bin
-ln -s /home/$user/lca/Shotcut/Shotcut.app/melt
+ln -s /home/$nuser/lca/Shotcut/Shotcut.app/melt
 cd ..
 
 mkdir Desktop
@@ -367,9 +369,22 @@ Exec=/usr/bin/xterm /home/$nuser/lca/video-scripts/carl/ra.sh
 EOT
 chmod 744 $APP
 chown $nuser:$nuser $APP
+
+APP=grabber.desktop
+cat <<EOT > $APP
+[Desktop Entry]
+Version=1.0
+Name=Screen Grabber
+Type=Application
+Icon=/home/$nuser/lca/GRABBER.GIF
+Vendor=TimVideos
+Exec=/usr/bin/xterm /home/$nuser/lca/video-scripts/carl/grabber.sh
+EOT
+chmod 744 $APP
+chown $nuser:$nuser $APP
+
 cd ..
 
 chown $nuser:$nuser -R Desktop lca
-
 
 
