@@ -342,12 +342,12 @@ git clone http://$SHAZ/git/voctomix.git
 git clone http://$SHAZ/git/clocky.git
 
 wget http://$SHAZ/lc/Desktop/dsotm.png 
-wget http://$SHAZ/lc/Desktop/GRABBER.png 
+wget http://$SHAZ/lc/Desktop/GRABBER.GIF 
 wget http://$SHAZ/avsync.ts
 
 # install melt encoder
 wget http://$SHAZ/lc/shotcut-debian7-x86_64-160102.tar.bz2
-tar xvf shotcut-debian7-x86_64-160102.tar.bz2
+tar xvjf shotcut-debian7-x86_64-160102.tar.bz2
 cd ../bin
 ln -s /home/$nuser/lca/Shotcut/Shotcut.app/melt
 cd ..
