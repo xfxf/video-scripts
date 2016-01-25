@@ -9,5 +9,5 @@
 	-pix_fmt yuv420p \
     -r 30 \
 	-f matroska \
-	tcp://localhost:1000$1
+	tcp://$VOC_CORE:1000$1
 

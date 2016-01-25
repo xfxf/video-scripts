@@ -5,11 +5,9 @@ dir=$(date +%Y-%m-%d/atlys)
 
 dir=~/Videos
 
-# HDMI2USB=/dev/video0
+while true; do
 
-while [ 1 ]; do
-
-gst-launch-1.0 -v \
+  gst-launch-1.0 -v \
     --eos-on-shutdown \
     v4l2src device=$HTMI2USB \
     ! image/jpeg,width=1280,height=720 \
@@ -25,7 +23,6 @@ gst-launch-1.0 -v \
       ! queue max-size-bytes=100000000 max-size-time=0 \
     ! filesink location=$dir/$(date +%H_%M_%S).mkv
 
-exit 
-sleep 1
+  sleep 1
 
 done
