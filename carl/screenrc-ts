@@ -15,8 +15,10 @@ screen -t vui bash -c  'while true; do ./vui.sh; sleep 1; done'
 
 screen -t hu bash -c   'while true; do ./hu-alsa.sh 0; sleep 1; done'
 screen -t test bash -c 'while true; do ./gst-test-src.sh 1; sleep 1; done'
-screen -t t2 bash -c   'while true; do ./source-avsync-test-clip-looped-as-cam-x.sh 2; sleep 1; done'
+screen -t test bash -c 'while true; do ssh $VOC_SLAVE lca/video-scripts/carl/gst-test-src.sh 1; sleep 2; done'
+# screen -t t2 bash -c   'while true; do ./source-avsync-test-clip-looped-as-cam-x.sh 2; sleep 1; done'
+# screen -t t2 bash -c   'while true; do ssh $VOC_SLAVE lca/video-scripts/carl/source-avsync-test-clip-looped-as-cam-x.sh 2; sleep 1; done'
 
 screen -t save bash -c 'while true; do ./record-timestamp.sh; sleep 1; done'
-screen -t cut bash -c  'sleep 2; while true; do ./generate-cut-list.sh; sleep 1; done'
+screen -t cut bash -c  'sleep 7; while true; do ./generate-cut-list.sh; sleep 1; done'
 

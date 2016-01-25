@@ -1,11 +1,18 @@
 #!/bin/bash -ex
 
-    gst-launch-1.0 -v \
+# hdmi2usb, generated audio, local display (including fps)
+# used for screen grabber, loops and sends to core
+
+while true; do
+
+    gst-launch-1.0 \
         v4l2src device=$HDMI2USB !\
             image/jpeg,width=1280,height=720 !\
             jpegdec !\
             videoconvert !\
             videorate !\
+         tee name=t ! queue ! \
+            videoconvert ! fpsdisplaysink t. ! \
             video/x-raw,format=I420,width=1280,height=720,framerate=30/1,pixel-aspect-ratio=1/1 !\
             queue !\
             mux. \
@@ -18,3 +25,6 @@
         matroskamux name=mux !\
             tcpclientsink port=1000$1 host=$VOC_CORE
 
+    sleep 1
+
+done
