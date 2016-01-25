@@ -18,5 +18,5 @@ screen -t test bash -c 'while true; do ./gst-test-src.sh 1; sleep 1; done'
 screen -t t2 bash -c   'while true; do ./source-avsync-test-clip-looped-as-cam-x.sh 2; sleep 1; done'
 
 screen -t save bash -c 'while true; do ./record-timestamp.sh; sleep 1; done'
-screen -t cut bash -c  'sleep 2; while true; do ./generate-cut-list.sh; sleep 1; done'
+screen -t cut bash -c  'sleep 7; while true; do ./generate-cut-list.sh; sleep 1; done'
 
