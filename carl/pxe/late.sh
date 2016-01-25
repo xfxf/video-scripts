@@ -277,9 +277,11 @@ printf "\nTIMEFORMAT=%%E\n" >> .bashrc
 # printf "\nexport DISPLAY=:0.0\n" >> .bashrc
 printf "\nexport HDMI2USB=/dev/video0\n" >> .bashrc
 
+printf "\n# Vocto settings:\n" >> .bashrc
 printf "\n# For slave, replace this with hostname of box running vocto core\n" >> .bashrc
 printf "export VOC_CORE=localhost\n" >> .bashrc
-
+printf "\n# for core, hostname of box running grabber\n" >> .bashrc
+printf "export VOC_SLAVE=\n" >> .bashrc
 
 ## create ~/bin
 # ~/bin gets added to PATH if it exists when the shell is started.
@@ -330,11 +332,26 @@ EOT
 chmod 744 $APP
 chown $nuser:$nuser $APP
 
+set -ex
 
+mkdir lca
+cd lca
+
+git clone http://$SHAZ/git/video-scripts.git
+git clone http://$SHAZ/git/voctomix.git
+git clone http://$SHAZ/git/clocky.git
+
+wget http://$SHAZ/lc/Desktop/dsotm.png 
+
+# install melt encoder
+wget http://$SHAZ/lc/shotcut-debian7-x86_64-160102.tar.bz2
+tar xvf shotcut-debian7-x86_64-160102.tar.bz2
+cd ../bin
+ln -s /home/$user/lca/Shotcut/Shotcut.app/melt
+cd ..
+
+mkdir Desktop
 cd Desktop
-# APP=pyohio_2014_logos.odp
-# wget http://$SHAZ/lc/$APP
-# chown $nuser:$nuser $APP 
 
 APP=voc.desktop
 cat <<EOT > $APP
@@ -344,41 +361,15 @@ Name=Vocto Recording System
 GenericName=Wooo Go!
 Comment=No Comment
 Type=Application
-Icon=/home/$nuser/.cache/dsotm.png
+Icon=/home/$nuser/lca/dsotm.png
 Vendor=TimVideos
 Exec=/usr/bin/xterm /home/$nuser/lca/video-scripts/carl/ra.sh
 EOT
 chmod 744 $APP
 chown $nuser:$nuser $APP
-wget http://avserver/lc/Desktop/dsotm.png -O /home/$nuser/.cache/dsotm.png
-
 cd ..
 
+chown $nuser:$nuser -R Desktop lca
 
-# APP=slcomp.py
-# wget http://$SHAZ/$APP
-# chmod 744 $APP 
-# chown $nuser:$nuser $APP 
-
-# wget http://$SHAZ/dvs.tar
-# tar xf dvs.tar
-# chmod -R 744 dvswitch
-# chown -R $nuser:$nuser dvswitch
-
-mkdir lca
-cd lca
-
-git clone http://avserver/git/video-scripts.git
-git clone http://avserver/git/voctomix.git
-git clone http://avserver/git/clocky.git
-
-cd ..
-
-# install melt encoder
-cd .local
-wget http://avserver/lc/shotcut-debian7-x86_64-160102.tar.bz2
-tar xvf shotcut-debian7-x86_64-160102.tar.bz2
-cd ../bin
-ln -s /home/$user/.local/Shotcut/Shotcut.app/melt
 
 
