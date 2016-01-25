@@ -1,6 +1,11 @@
 config.ini 
 
-~/.bashrc  HDMI2USB=/dev/video0
+~/.bashrc  
+export HDMI2USB=/dev/video0
+# For slave, replace this with hostname of box running vocto core\n" >> .bashrc
+export VOC_CORE=localhost
+
+
 
 # to runn all the things:
 screen -c screenrc-ts

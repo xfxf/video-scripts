@@ -20,5 +20,5 @@
             mux. \
         \
         matroskamux name=mux !\
-            tcpclientsink port=10000 host=localhost
+            tcpclientsink port=10000 host=$VOC_CORE
 
