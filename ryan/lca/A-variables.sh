@@ -5,7 +5,7 @@ export ROOMNAME="TestRoom"
 export RECDIR="/home/juser/Videos/"
 
 # IP address of voctocore in relation to this computer
-export VOCTOCOREIP="localhost"
+export VOCTOCOREIP="192.168.0.15"
 export VOCTOOPTIONS="-vv"
 
 # this computers source (running on voctocore PC)
