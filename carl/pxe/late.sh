@@ -271,10 +271,13 @@ chown -R $nuser:$nuser .ssh
 # chown $nuser:$nuser authorized_keys
 # cd ..
 
-
 # make time command report just total seconds.
 printf "\nTIMEFORMAT=%%E\n" >> .bashrc
 # printf "\nexport DISPLAY=:0.0\n" >> .bashrc
+
+# so that bits of this script work on a live box later for testing
+printf "\nnuser=$nuser\n" >> .bashrc
+printf "SHAZ=$SHAZ\n" >> .bashrc
 
 printf "\n# Vocto settings:\n" >> .bashrc
 printf "\nexport HDMI2USB=/dev/video0\n" >> .bashrc
@@ -342,12 +345,18 @@ git clone http://$SHAZ/git/voctomix.git
 git clone http://$SHAZ/git/clocky.git
 
 wget http://$SHAZ/lc/Desktop/dsotm.png 
-wget http://$SHAZ/lc/Desktop/GRABBER.png 
+wget http://$SHAZ/lc/Desktop/GRABBER.GIF 
+wget http://$SHAZ/lc/Desktop//high-voltage-sign-russian.png
 wget http://$SHAZ/avsync.ts
+
+# make a default settings file
+cd video-scripts/carl
+./hu-mk-conf.sh
+cd ../..
 
 # install melt encoder
 wget http://$SHAZ/lc/shotcut-debian7-x86_64-160102.tar.bz2
-tar xvf shotcut-debian7-x86_64-160102.tar.bz2
+tar xvjf shotcut-debian7-x86_64-160102.tar.bz2
 cd ../bin
 ln -s /home/$nuser/lca/Shotcut/Shotcut.app/melt
 cd ..
@@ -378,10 +387,24 @@ Name=Screen Grabber
 Type=Application
 Icon=/home/$nuser/lca/GRABBER.GIF
 Vendor=TimVideos
-Exec=/usr/bin/xterm /home/$nuser/lca/video-scripts/carl/grabber.sh
+Exec=/usr/bin/xterm /home/$nuser/lca/video-scripts/carl/grab-loop.sh
 EOT
 chmod 744 $APP
 chown $nuser:$nuser $APP
+
+APP=kill_screen.desktop
+cat <<EOT > $APP
+[Desktop Entry]
+Version=1.0
+Name=Kill Vocto
+Type=Application
+Icon=/home/$nuser/lca/high-voltage-sign-russian.png
+Vendor=TimVideos
+Exec=/usr/bin/pkill screen
+EOT
+chmod 744 $APP
+chown $nuser:$nuser $APP
+
 
 cd ..
 

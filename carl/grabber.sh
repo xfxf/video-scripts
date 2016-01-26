@@ -3,8 +3,6 @@
 # hdmi2usb, generated audio, local display (including fps)
 # used for screen grabber, loops and sends to core
 
-while true; do
-
     gst-launch-1.0 \
         v4l2src device=$HDMI2USB !\
             image/jpeg,width=1280,height=720 !\
@@ -25,6 +23,3 @@ while true; do
         matroskamux name=mux !\
             tcpclientsink port=1000$1 host=$VOC_CORE
 
-    sleep 1
-
-done
