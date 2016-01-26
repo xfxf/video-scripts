@@ -22,11 +22,12 @@ def send(filename,port):
 
     child.sendline('')
     child.expect('HDMI2USB>')
+    time.sleep(3)
 
     for line in open(filename).read().split('\n'):
         child.sendline( line )
         child.expect('HDMI2USB>')
-        time.sleep(.1)
+        time.sleep(.3)
 
 def get_args():
     parser = argparse.ArgumentParser(description='Process some integers.')
