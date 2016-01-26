@@ -1,0 +1,50 @@
+#!/bin/sh
+#
+# Startup script for a user-based supervisord
+
+# Note that any switched specified on the command line are passed
+# unmolested to supervisord when invoked
+
+# The file ../etc/environment is a shell script for setting environment
+# variables used by server and client process configurations.
+# e.g. $BINDIR => %{ENV_BINDIR}s in config files
+
+# determine base in which config file(s) and logs reside
+
+BASEDIR="$(dirname $(dirname $(realpath "$0")))"/
+CONFDIR="${BASEDIR}conf/"
+LOGSDIR="${BASEDIR}logs/"
+USERNAME="videoteam"
+PASSWORD='{SHA}9d48c3533ccf4c73a1f23dde8b95ca186b492314'
+OWNER='root:videoteam'
+
+export BASEDIR CONFDIR LOGSDIR USERNAME PASSWORD OWNER
+
+# read user env variables
+# note that var SUPERVISOR is used to set default args for supervisord
+
+[ -f ${CONFDIR}environment ] && . ${CONFDIR}environment
+
+# Note: available supervisord command line options:
+#
+# -c FILE, --configuration=FILE                     (already used)
+# -n, --nodaemon                                    (run in foreground)
+# -h, --help                                        (command help)
+# -m OCTAL, --umask=OCTAL                           (umask used after it starts)
+# -d PATH, --directory=PATH                         (cd to this directory before daemonizing)
+# -l FILE, --logfile=FILE                           (path to use as activity log)
+# -y NUM, --logfile_backups=NUM                     (number of backup activity logs to keep)
+# -y BYTES, --logfile_maxbytes=BYTES                (max size of activity log before a rotation)
+#                                                   (suffix=none bytes “MB” megabytes “GB” gigabytes)
+# -e LEVEL, --loglevel=LEVEL                        (log level: trace|debug|info|warn|error|critical)
+# -j FILE, --pidfile=FILE                           (override pid file path)
+# -i STRING, --identifier=STRING                    (instance identifier)
+# -q PATH, --childlogdir=PATH                       (child logs path)
+# -k, --nocleanup                                   (prevent cleanup process log files on startup)
+# -a NUM, --minfds=NUM                              (file descriptor ulimit required to start)
+# --minprocs=NUM                                    (processulimit required to start)
+# -t, --strip_ansi                                  (strip ANSI escapes from child logs)
+# -v, --version                                     (print version and exit)
+
+/usr/bin/supervisord -c ${CONFDIR}supervisord.conf ${SUPERVISOR}
+
