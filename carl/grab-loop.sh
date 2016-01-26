@@ -1,4 +1,4 @@
-#!/bin/bash -exi
+#!/bin/bash -ei
 
 # loops the grabber
 
