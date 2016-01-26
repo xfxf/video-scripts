@@ -1,6 +1,8 @@
-#!/bin/bash -ex
+#!/bin/bash -exi
 
 # loops the grabber
+
+cd ~/lca/video-scripts/carl/
 
 while true; do
 
