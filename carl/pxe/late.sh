@@ -280,8 +280,9 @@ printf "\nnuser=$nuser\n" >> .bashrc
 printf "SHAZ=$SHAZ\n" >> .bashrc
 
 printf "\n# Vocto settings:\n" >> .bashrc
-printf "\nexport HDMI2USB=/dev/video0\n" >> .bashrc
-printf "\n# For slave, replace this with hostname of box running vocto core\n" >> .bashrc
+printf "export HDMI2USB=/dev/video0\n" >> .bashrc
+printf "export VOC_ALSA_DEV='hw:1,0' # or maybe 'hw:CARD=CODEC'\n" >> .bashrc
+printf "# For slave, replace this with hostname of box running vocto core\n" >> .bashrc
 printf "export VOC_CORE=localhost\n" >> .bashrc
 # printf "\n# for core, hostname of box running grabber\n" >> .bashrc
 # printf "export VOC_SLAVE=\n" >> .bashrc
@@ -346,6 +347,7 @@ git clone http://$SHAZ/git/clocky.git
 
 wget http://$SHAZ/lc/Desktop/dsotm.png 
 wget http://$SHAZ/lc/Desktop/GRABBER.GIF 
+wget http://$SHAZ/lc/Desktop/dvcam.png 
 wget http://$SHAZ/lc/Desktop//high-voltage-sign-russian.png
 wget http://$SHAZ/avsync.ts
 
@@ -388,6 +390,19 @@ Type=Application
 Icon=/home/$nuser/lca/GRABBER.GIF
 Vendor=TimVideos
 Exec=/usr/bin/xterm /home/$nuser/lca/video-scripts/carl/grab-loop.sh
+EOT
+chmod 744 $APP
+chown $nuser:$nuser $APP
+
+APP=dvcam.desktop
+cat <<EOT > $APP
+[Desktop Entry]
+Version=1.0
+Name=DV Cam
+Type=Application
+Icon=/home/$nuser/lca/dvcam.png
+Vendor=TimVideos
+Exec=/usr/bin/xterm /home/$nuser/lca/video-scripts/carl/dvcam-loop.sh
 EOT
 chmod 744 $APP
 chown $nuser:$nuser $APP
