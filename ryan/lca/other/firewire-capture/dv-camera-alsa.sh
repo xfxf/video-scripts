@@ -29,7 +29,7 @@ export PORT=10000
 		    queue !\
 		mux. \
             matroskamux name=mux !\
-          	tcpclientsink port=$PORT host=$HOST \
+          	tcpclientsink port=${DPORT:-$PORT} host=${DHOST:-$HOST} \
         t. !\
             queue !\
             fpsdisplaysink sync=false
