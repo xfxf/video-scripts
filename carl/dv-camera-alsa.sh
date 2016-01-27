@@ -19,7 +19,7 @@
 		    queue !\
 		mux. \
             matroskamux name=mux !\
-          	tcpclientsink port=$1000$1 host=$VOC_CORE \
+          	tcpclientsink port=1000$1 host=$VOC_CORE \
         t. !\
             queue !\
             fpsdisplaysink sync=false

@@ -42,7 +42,8 @@ fi
 
 # # beep on firewire card add/remove
 cd /etc/udev/rules.d
-wget http://$SHAZ/lc/fw-beep.rules
+# this breaks things all to hell
+# wget http://$SHAZ/lc/fw-beep.rules
 cd
 
 ## disable screensaver, blank screen on idle, blank screen on lid close
@@ -101,6 +102,16 @@ CONF=/etc/update-manager/release-upgrades
 if [ -f $CONF ]; then
   sed -i "/^Prompt=normal/s/^.*$/Prompt=never/" $CONF
 fi
+
+# use local time server
+CONF=/etc/openntpd/ntpd.conf
+if [ -f $CONF ]; then
+cat <<EOT >$CONF
+server $SHAZ
+EOT
+fi
+
+
 
 # disable "incomplete language support" dialog
 case $suite in
@@ -212,7 +223,7 @@ fi
 cat <<EOT >> /etc/exports
 # /home/$nuser/Videos  192.168.1.0/16(rw,async,no_subtree_check)
 # /home/$nuser/Videos  10.0.0.1/32(rw,async,no_subtree_check)
-/home/$nuser/Videos  room100.local(rw,async,no_subtree_check)
+# /home/$nuser/Videos  room100.local(rw,async,no_subtree_check)
 EOT
 
 ## add modules that needs to be added:
@@ -309,6 +320,11 @@ wget -N http://$SHAZ/lc/hook.sh
 chmod u+x hook.sh
 ./hook.sh \$*
 EOT
+chmod 744 $APP
+chown $nuser:$nuser $APP
+
+APP=upbox.py
+wget -N http://$SHAZ/lc/$APP
 chmod 744 $APP
 chown $nuser:$nuser $APP
 
@@ -419,7 +435,6 @@ Exec=/usr/bin/pkill screen
 EOT
 chmod 744 $APP
 chown $nuser:$nuser $APP
-
 
 cd ..
 
