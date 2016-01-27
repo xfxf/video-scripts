@@ -25,7 +25,7 @@ export BASEDIR CONFDIR LOGSDIR USERNAME PASSWORD OWNER
 # read user env variables
 # note that var SUPERVISOR can be used to set default args for supervisord
 
-[ -f ${CONFDIR}environment ] && . ${CONFDIR}environment
+[ -f ${CONFDIR}environment.conf ] && . ${CONFDIR}environment.conf
 
 # Note: available supervisord command line options:
 #
