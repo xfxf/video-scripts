@@ -8,7 +8,7 @@ while true; do
 
     python hu-conf.py /dev/ttyVIZ0 hdmi2usb.cmd
 
-    ./grabber.sh 2
+    ./grabber.sh 1
 
     sleep 1
 

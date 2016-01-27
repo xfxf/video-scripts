@@ -13,7 +13,7 @@ hardstatus string '%{= kG}%-Lw%{= kW}%50> %n%f* %t%{= kG}%+Lw%< %{= kG}'
 screen -t core bash -c 'while true; do ./vcore.sh; sleep 1; done'
 screen -t vui bash -c  'while true; do ./vui.sh; sleep 1; done'
 
-screen -t alsa bash -c   'while true; do ./alsa.sh 0; sleep 1; done'
+# screen -t alsa bash -c   'while true; do ./alsa.sh 0; sleep 1; done'
 
 screen -t save bash -c 'while true; do ./record-timestamp.sh; sleep 1; done'
 screen -t cut bash -c  'sleep 7; while true; do ./generate-cut-list.sh; sleep 1; done'
