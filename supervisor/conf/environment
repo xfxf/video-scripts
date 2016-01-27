@@ -4,4 +4,6 @@
 SUPERVISOR=
 
 # Make sure that other env vars are exported
+export SCRIPTSROOT=$(realpath ~/lca/video-scripts)
+export PYTHON=/usr/bin/python
 

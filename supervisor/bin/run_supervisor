@@ -13,7 +13,7 @@ SUPERVISORD=`which supervisord`
 
 # determine base in which config file(s) and logs reside
 
-BASEDIR="$(dirname $(dirname "$0"))"/
+BASEDIR="$(dirname $(dirname $(realpath "$0")))"/
 CONFDIR="${BASEDIR}conf/"
 LOGSDIR="${BASEDIR}logs/"
 USERNAME="videoteam"
