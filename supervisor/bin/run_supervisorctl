@@ -1,0 +1,49 @@
+#!/bin/sh
+#
+# Startup script for a user-based supervisorctl
+
+SUPERVISORCTL=`which supervisorctl`
+
+BASEDIR="$(dirname $(dirname $(realpath "$0")))"/
+CONFDIR="${BASEDIR}conf/"
+LOGSDIR="${BASEDIR}logs/"
+USERNAME="videoteam"
+
+export BASEDIR CONFDIR LOGSDIR USERNAME
+
+# Note: available supervisord command line options:
+#
+#
+# -c/--configuration FILENAME                    (already used)
+# -h/--help                                      (print usage message and exit)
+# -i/--interactive                               (interactive shell)
+# -s/--serverurl URL                             (supervisor URL default "http://localhost:9001")
+# -u/--username USERNAME                         (server username)
+# -p/--password PASSWORD                         (server password)
+# -r/--history-file                              (keep a readline history if available)
+#
+# Actions:
+#   add
+#   avail
+#   clear
+#   exit
+#   fg
+#   maintail
+#   open
+#   pid
+#   quit
+#   reload
+#   remove
+#   reread
+#   restart
+#   shutdown
+#   signal
+#   start
+#   status
+#   stop
+#   tail   
+#   update
+#   version
+
+exec ${SUPERVISORCTL} -c ${CONFDIR}supervisord.conf -u ${USERNAME} "$@"
+

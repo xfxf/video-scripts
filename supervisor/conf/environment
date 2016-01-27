@@ -1,3 +1,7 @@
 # This shell script is sourced during startup for supervisor
-# Make sure that env vars are exported
+
+# Default commandline args (script local: does not need to be exported
+SUPERVISOR=
+
+# Make sure that other env vars are exported
 

@@ -2,6 +2,8 @@
 #
 # Startup script for a user-based supervisord
 
+SUPERVISORD=`which supervisord`
+
 # Note that any switched specified on the command line are passed
 # unmolested to supervisord when invoked
 
@@ -11,7 +13,7 @@
 
 # determine base in which config file(s) and logs reside
 
-BASEDIR="$(dirname $(dirname $(realpath "$0")))"/
+BASEDIR="$(dirname $(dirname "$0"))"/
 CONFDIR="${BASEDIR}conf/"
 LOGSDIR="${BASEDIR}logs/"
 USERNAME="videoteam"
@@ -21,7 +23,7 @@ OWNER='root:videoteam'
 export BASEDIR CONFDIR LOGSDIR USERNAME PASSWORD OWNER
 
 # read user env variables
-# note that var SUPERVISOR is used to set default args for supervisord
+# note that var SUPERVISOR can be used to set default args for supervisord
 
 [ -f ${CONFDIR}environment ] && . ${CONFDIR}environment
 
@@ -46,5 +48,5 @@ export BASEDIR CONFDIR LOGSDIR USERNAME PASSWORD OWNER
 # -t, --strip_ansi                                  (strip ANSI escapes from child logs)
 # -v, --version                                     (print version and exit)
 
-/usr/bin/supervisord -c ${CONFDIR}supervisord.conf ${SUPERVISOR}
+exec ${SUPERVISORD} -c ${CONFDIR}supervisord.conf ${SUPERVISOR} "$@"
 
