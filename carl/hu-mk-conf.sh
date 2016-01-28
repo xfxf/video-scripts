@@ -6,6 +6,6 @@ video_matrix connect input1 output0
 video_matrix connect input1 output1
 video_matrix connect input1 encoder
 encoder on
-encoder quality 85
+encoder quality 75
 EOT
 
