@@ -196,6 +196,10 @@ if [ -f $CONF ]; then
   sed -i "/^EnableIndexing=true/s/^.*$/EnableIndexing=false/" $CONF
 fi
 
+cd /etc
+rm hosts
+wget http://$SHAZ/lc/hosts
+
 ## create network manager configs: static ip, dhcp, whacky make up 169 IP
 # http://trac.linexa.de/wiki/development/BootCD-booting
 # ...Createastaticnetworkmanagerfileforeth0
@@ -211,12 +215,13 @@ if [ -d $CONF ]; then
   }
 
   cd $CONF
+  rm "Wired connection 1"
   get_nm_conf 10.0.0.1
   get_nm_conf 10.0.0.2
   get_nm_conf 192.168.0.1
   get_nm_conf dhcpipv4
   get_nm_conf auto-magic
-  get_nm_conf eyes
+  get_nm_conf $(hostname)
 
 fi
 
@@ -235,6 +240,7 @@ cat <<EOT >> /etc/modules
 # pciehp
 # yenta_socket
 EOT
+
 
 ## grab some home made utilities 
 # cd /sbin
@@ -287,8 +293,8 @@ printf "\nTIMEFORMAT=%%E\n" >> .bashrc
 # printf "\nexport DISPLAY=:0.0\n" >> .bashrc
 
 # so that bits of this script work on a live box later for testing
-printf "\nnuser=$nuser\n" >> .bashrc
-printf "SHAZ=$SHAZ\n" >> .bashrc
+printf "\nexport nuser=$nuser\n" >> .bashrc
+printf "export SHAZ=$SHAZ\n" >> .bashrc
 
 printf "\n# Vocto settings:\n" >> .bashrc
 printf "export HDMI2USB=/dev/video0\n" >> .bashrc
@@ -364,7 +370,7 @@ git clone http://$SHAZ/git/clocky.git
 wget http://$SHAZ/lc/Desktop/dsotm.png 
 wget http://$SHAZ/lc/Desktop/GRABBER.GIF 
 wget http://$SHAZ/lc/Desktop/dvcam.png 
-wget http://$SHAZ/lc/Desktop//high-voltage-sign-russian.png
+wget http://$SHAZ/lc/Desktop/high-voltage-sign-russian.png
 wget http://$SHAZ/avsync.ts
 
 # make a default settings file
