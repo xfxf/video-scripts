@@ -6,7 +6,7 @@ cd ~/lca/video-scripts/carl/
 
 while true; do
 
-    python hu-conf.py /dev/ttyVIZ0 hdmi2usb.cmd
+    # python hu-conf.py /dev/ttyVIZ0 hdmi2usb.cmd
 
     ./grabber.sh 1
 

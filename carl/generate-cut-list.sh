@@ -1,5 +1,4 @@
-#!/bin/bash -ex
-
+#!/bin/bash -e
 
 dir=~/Videos/veyepar/lca/lca2016/dv/$HOSTNAME/$(date +%Y-%m-%d)
 mkdir -p $dir
