@@ -12,23 +12,26 @@ class Source(object):
 	def __init__(self):
 		# it works much better with a local file
 		pipeline = """
-			videotestsrc pattern=ball foreground-color=0x00ff0000 background-color=0x00440000 !\
+			videotestsrc pattern=ball foreground-color=0x00ff0000 background-color=0x00440000 !
 				timeoverlay !
-				video/x-raw,format=I420,width=1280,height=720,framerate=30/1,pixel-aspect-ratio=1/1 !\
-				mux. \
-			\
-			audiotestsrc freq=330 !\
-				audio/x-raw,format=S16LE,channels=2,layout=interleaved,rate=48000 !\
-				mux. \
-			\
-			matroskamux name=mux !\
-				tcpclientsink host=192.168.0.70 port=10000
+				video/x-raw,format=I420,width=1280,height=720,framerate=30/1,pixel-aspect-ratio=1/1 !
+				mux.
+
+			audiotestsrc freq=330 !
+				audio/x-raw,format=S16LE,channels=2,layout=interleaved,rate=48000 !
+				mux.
+
+			matroskamux name=mux !
+				tcpclientsink host=192.168.0.10 port=10000
 		"""
 
-		clock = Gst.SystemClock.obtain()
-		self.clock = GstNet.NetClientClock.new('voctocore', '192.168.0.70', 9998, clock.get_time())
+		self.clock = GstNet.NetClientClock.new('voctocore', '192.168.0.10', 9998, 0)
 		print('obtained NetClientClock from host', self.clock)
 
+		print('waiting for NetClientClock to sync…')
+		self.clock.wait_for_sync(Gst.CLOCK_TIME_NONE)
+
+		print('starting pipeline')
 		self.senderPipeline = Gst.parse_launch(pipeline)
 		self.senderPipeline.use_clock(self.clock)
 		self.src = self.senderPipeline.get_by_name('src')

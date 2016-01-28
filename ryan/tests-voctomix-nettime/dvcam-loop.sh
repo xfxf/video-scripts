@@ -2,7 +2,7 @@
 
 # loops the dv-firewire cam + alsa
 
-cd ~/lca/video-scripts/ryan/tests/
+cd ~/lca/video-scripts/ryan/tests-voctomix-nettime/
 
 while true; do
 

@@ -30,10 +30,10 @@ class Source(object):
         \
         matroskamux name=mux !\
             tcpclientsink port=1000%s host=%s
-		""" % ('/dev/video0', '1', '192.168.0.70')
+		""" % ('/dev/video0', '1', '192.168.0.10')
 
 		clock = Gst.SystemClock.obtain()
-		self.clock = GstNet.NetClientClock.new('voctocore', '192.168.0.70', 9998, clock.get_time())
+		self.clock = GstNet.NetClientClock.new('voctocore', '192.168.0.10', 9998, clock.get_time())
 		print('obtained NetClientClock from host', self.clock)
 
 		self.senderPipeline = Gst.parse_launch(pipeline)
