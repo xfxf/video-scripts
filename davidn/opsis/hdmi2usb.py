@@ -16,9 +16,9 @@ class Hdmi2Usb(SerialIO):
     def enable_debug(self, indev =None):
         if self.port is None or not self.port.isOpen():
             self.open()
-        self.timed_send(b'\r\n')
-        self.expect(Hdmi2Usb.PROMPT)
         for indev in range(2):
+            self.timed_send(b'\r\n')
+            self.expect(Hdmi2Usb.PROMPT)
             debug_enable = str.encode('debug input' + str(indev) + '\r\n')
             self.timed_send(debug_enable)
             expecting = str.encode(Hdmi2Usb.DEBUGVAL.format(indev))

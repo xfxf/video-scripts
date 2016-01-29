@@ -26,8 +26,8 @@ class SerialIO(object):
     }
 
     TIMERS = {
-        'wait_byte': 0.05,           # wait time between chars sent
-        'wait_line': 0.10,           # wait time after each "line"
+        'wait_byte': 0.10,           # wait time between chars sent
+        'wait_line': 0.30,           # wait time after each "line"
     }
 
     @property
