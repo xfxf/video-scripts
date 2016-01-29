@@ -1,6 +1,12 @@
 #!/usr/bin/python
 
+import shutil
+import subprocess
+
+
 known = {
+    'r1mix':  '94:de:80:77:68:33',
+    'r2mix':  '14:da:e9:33:b2:4c',
     'r7mix':  '54:ee:75:12:2f:f6',
     'r7cam':  'f0:de:f1:49:72:60',
     'r7grab': '00:1e:37:90:15:7f',
@@ -30,6 +36,8 @@ with open('dhcpd-macs.conf', 'w') as f:
 
 with open('hosts', 'w') as f:
     f.write('127.0.0.1\tlocalhost\n\n')
+    f.write('192.168.0.1\tavserver.private avserver\n\n')
+
     for ip, name in enumerate_machines():
         f.write(
             '%(ip)s\t%(name)6s.private %(name)s\n'
@@ -57,6 +65,8 @@ type=802-3-ethernet
 [ipv4]
 method=manual
 addresses1={ip};8;0.0.0.0;
+dns=192.168.0.1;
+dns-search=private
 
 [802-3-ethernet]
 duplex=full
@@ -67,5 +77,7 @@ method=ignore
 
 
 
+shutil.copyfile('dhcpd-macs.conf', '/etc/dhcp/dhcpd-macs.conf')
+subprocess.check_output(('service', 'isc-dhcp-server', 'restart'))
 
 # vi: set et sw=4 ts=4:

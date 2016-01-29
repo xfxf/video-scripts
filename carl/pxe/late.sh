@@ -12,6 +12,21 @@ nuser=$2 # juser
 # passed from append= in /var/lib/tftpboot/pxelinux.cfg/default 
 SHAZ=$url
 
+hostname=$(hostname)
+ip=$(getent hosts $hostname | cut -d' ' -f 1)
+
+type="${hostname#r?}"
+if [ "$type" != "$hostname" ]; then
+  room="${hostname%$type}"
+  room="${room#r}"
+  mix="r${room}mix"
+else
+  room=0
+  type=standalone
+  mix=localhost
+fi
+
+
 ## ssh greating: cpu, ubuntu ver, firewire guids
 # add the cpu name/speed and ubuntu flavor to login greeting
 PROFDIR=/etc/profile.d
@@ -45,6 +60,15 @@ cd /etc/udev/rules.d
 # this breaks things all to hell
 # wget http://$SHAZ/lc/fw-beep.rules
 cd
+
+# disable ixo-usb-jtag for Opsis boards
+
+CONF=/lib/udev/rules.d/85-ixo-usb-jtag.rules
+if [ -f $CONF ]; then
+  sed -e '/5440/ s/^#*/# /' -i $CONF
+fi
+
+
 
 ## disable screensaver, blank screen on idle, blank screen on lid close
 # https://wiki.gnome.org/action/show/Projects/dconf/SystemAdministrators
@@ -106,11 +130,14 @@ fi
 # use local time server
 CONF=/etc/openntpd/ntpd.conf
 if [ -f $CONF ]; then
-cat <<EOT >$CONF
-server $SHAZ
-EOT
+  echo "server $SHAZ" >$CONF
+  if [ "$type" = "mix" ]; then
+    echo "listen on *" >>$CONF
+  elif [ "$type" != "standalone" ]; then
+    echo "server $mix" >>$CONF
+  fi
 fi
-
+echo 'DAEMON_OPTS="-f /etc/openntpd/ntpd.conf -s"' >/etc/default/openntpd
 
 
 # disable "incomplete language support" dialog
@@ -205,7 +232,6 @@ wget http://$SHAZ/lc/hosts
 # ...Createastaticnetworkmanagerfileforeth0
 CONF=/etc/NetworkManager/system-connections
 if [ -d $CONF ]; then
- 
   get_nm_conf() {
   INI=$1.conf
   wget http://$SHAZ/lc/nm/$INI
@@ -215,13 +241,16 @@ if [ -d $CONF ]; then
   }
 
   cd $CONF
-  rm "Wired connection 1"
   get_nm_conf 10.0.0.1
   get_nm_conf 10.0.0.2
   get_nm_conf 192.168.0.1
   get_nm_conf dhcpipv4
   get_nm_conf auto-magic
   get_nm_conf $(hostname)
+ 
+  # Try to deal with Network Manager's desire to create this file 
+  get_nm_conf "Wired connection 1"
+  mv "Wired connection 1.conf" "Wired connection 1"
 
 fi
 
@@ -241,6 +270,22 @@ cat <<EOT >> /etc/modules
 # yenta_socket
 EOT
 
+# dvswitch schroot
+cd /var/lib/schroot
+mkdir -p tarballs chroots/dvswitch
+cd tarballs
+wget http://$SHAZ/lc/dvswitch.tar.xz
+cd ../chroots/dvswitch
+tar -xf /var/lib/schroot/tarballs/dvswitch.tar.xz
+
+cat > /etc/schroot/chroot.d/dvswitch <<EOF
+[dvswitch]
+description=oneiric-amd64 chroot for running dvswitch
+groups=videoteam,root
+root-groups=sbuild,root
+type=directory
+directory=/var/lib/schroot/chroots/dvswitch
+EOF
 
 ## grab some home made utilities 
 # cd /sbin
@@ -298,17 +343,40 @@ printf "export SHAZ=$SHAZ\n" >> .bashrc
 
 printf "\n# Vocto settings:\n" >> .bashrc
 printf "export HDMI2USB=/dev/video0\n" >> .bashrc
-printf "export VOC_ALSA_DEV='hw:1,0' # or maybe 'hw:CARD=CODEC'\n" >> .bashrc
+printf "export VOC_PULSE_DEV=''\n" >> .bashrc
 printf "# For slave, replace this with hostname of box running vocto core\n" >> .bashrc
-printf "export VOC_CORE=localhost\n" >> .bashrc
+printf "export VOC_CORE=$mix\n" >> .bashrc
 # printf "\n# for core, hostname of box running grabber\n" >> .bashrc
 # printf "export VOC_SLAVE=\n" >> .bashrc
+
+printf "\n# DVswitch settings:\n" >> .bashrc
+printf "export DVS_CAM=r${room}cam\n" >> .bashrc
+printf "export DVS_GRAB=r${room}grab\n" >> .bashrc
+printf "export DVS_ALSA_DEV='hw:1,0' # or maybe 'hw:CARD=CODEC'\n" >> .bashrc
 
 ## create ~/bin
 # ~/bin gets added to PATH if it exists when the shell is started.
 # so make it now so that it is in PATH when it is needed later. 
 mkdir -p bin temp .mplayer .config/autostart .config/conky
 chown -R $nuser:$nuser bin temp .mplayer .config 
+
+## generic .dvswitchrc, good for testing and production master, slave needs to be tweaked.
+cat <<EOT > .dvswitchrc
+MIXER_HOST=$mix
+MIXER_PORT=2000
+# MIXER_HOST=10.0.0.1
+# MIXER_HOST=192.168.0.1
+# MIXER_HOST=0.0.0.0
+EOT
+chown -R $nuser:$nuser .dvswitchrc
+
+cat <<EOT > veyepar.cfg
+[global]
+client=lca 
+show=lca2016 
+EOT
+chown -R $nuser:$nuser .dvswitchrc
+
 
 cd .config/autostart
 wget http://$SHAZ/lc/conky/conky.desktop
@@ -366,10 +434,13 @@ cd lca
 git clone http://$SHAZ/git/video-scripts.git
 git clone http://$SHAZ/git/voctomix.git
 git clone http://$SHAZ/git/clocky.git
+git clone http://$SHAZ/git/dvsmon.git
+git clone http://$SHAZ/git/HDMI2USB-firmware-prebuilt.git
 
 wget http://$SHAZ/lc/Desktop/dsotm.png 
 wget http://$SHAZ/lc/Desktop/GRABBER.GIF 
 wget http://$SHAZ/lc/Desktop/dvcam.png 
+wget http://$SHAZ/lc/Desktop/clock.jpg
 wget http://$SHAZ/lc/Desktop/high-voltage-sign-russian.png
 wget http://$SHAZ/avsync.ts
 
@@ -388,39 +459,26 @@ cd ..
 mkdir Desktop
 cd Desktop
 
-APP=voc.desktop
+APP=1-voc.desktop
 cat <<EOT > $APP
 [Desktop Entry]
 Version=1.0
-Name=Vocto Recording System
+Name=1 Vocto Recording System
 GenericName=Wooo Go!
 Comment=No Comment
 Type=Application
 Icon=/home/$nuser/lca/dsotm.png
 Vendor=TimVideos
-Exec=/usr/bin/xterm /home/$nuser/lca/video-scripts/carl/ra.sh
+Exec=/usr/bin/gnome-terminal --command /home/$nuser/lca/video-scripts/carl/ra.sh
 EOT
 chmod 744 $APP
 chown $nuser:$nuser $APP
 
-APP=grabber.desktop
+APP=2-dvcam.desktop
 cat <<EOT > $APP
 [Desktop Entry]
 Version=1.0
-Name=Screen Grabber
-Type=Application
-Icon=/home/$nuser/lca/GRABBER.GIF
-Vendor=TimVideos
-Exec=/usr/bin/xterm /home/$nuser/lca/video-scripts/carl/grab-loop.sh
-EOT
-chmod 744 $APP
-chown $nuser:$nuser $APP
-
-APP=dvcam.desktop
-cat <<EOT > $APP
-[Desktop Entry]
-Version=1.0
-Name=DV Cam
+Name=2 DV Cam
 Type=Application
 Icon=/home/$nuser/lca/dvcam.png
 Vendor=TimVideos
@@ -429,11 +487,25 @@ EOT
 chmod 744 $APP
 chown $nuser:$nuser $APP
 
-APP=kill_screen.desktop
+APP=3-grabber.desktop
 cat <<EOT > $APP
 [Desktop Entry]
 Version=1.0
-Name=Kill Vocto
+Name=3 Screen Grabber
+Type=Application
+Icon=/home/$nuser/lca/GRABBER.GIF
+Vendor=TimVideos
+Exec=/usr/bin/xterm /home/$nuser/lca/video-scripts/carl/grab-loop.sh
+EOT
+chmod 744 $APP
+chown $nuser:$nuser $APP
+
+
+APP=4-kill_vocto.desktop
+cat <<EOT > $APP
+[Desktop Entry]
+Version=1.0
+Name=4 Kill Vocto
 Type=Application
 Icon=/home/$nuser/lca/high-voltage-sign-russian.png
 Vendor=TimVideos
@@ -441,6 +513,34 @@ Exec=/usr/bin/pkill screen
 EOT
 chmod 744 $APP
 chown $nuser:$nuser $APP
+
+APP=9-dvsmon.desktop
+cat <<EOT > $APP
+[Desktop Entry]
+Name=9 DVswitch Launcher
+Comment=Manages DVswitch components
+Exec=/home/$nuser/lca/dvsmon/prod.sh
+Terminal=true
+Type=Application
+Icon=/home/$nuser/lca/dvsmon/dvswitch-logo.svg
+Categories=AudioVideo;
+EOT
+chmod 744 $APP
+chown $nuser:$nuser $APP
+
+APP=20-clocky.desktop
+cat <<EOT > $APP
+[Desktop Entry]
+Name=20 Clocky
+Comment=Thankyou David Goodger
+Exec=/home/$nuser/lca/clocky/wxclock.py
+Type=Application
+Icon=/home/$nuser/lca/clock.jpg
+Categories=AudioVideo;
+EOT
+chmod 744 $APP
+chown $nuser:$nuser $APP
+
 
 cd ..
 
