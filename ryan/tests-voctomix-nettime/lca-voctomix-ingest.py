@@ -49,7 +49,25 @@ class Source(object):
                 matroskamux name=mux !
                     tcpclientsink port=1000%s host=%s
                 """ % (pulse_device, voc_port, voc_core_ip)
-            
+           
+        elif pipeline_name == 'blackmagic':
+            pipeline = """
+            decklinkvideosrc !
+                queue !
+                videoconvert !
+                videorate !
+                videoscale !
+                video/x-raw,format=I420,width=1280,height=720,framerate=30/1,pixel-aspect-ratio=1/1 !
+                queue !
+                mux. 
+            decklinkaudiosrc !
+                audio/x-raw,format=S16LE,channels=2,layout=interleaved,rate=48000 !
+                queue !
+                mux. 
+            matroskamux name=mux !\
+                tcpclientsink port=1000%s host=%s
+                """ % (voc_port, voc_core_ip)
+ 
         elif pipeline_name == 'hdmi2usb':
             pipeline = """
             v4l2src device=%s !
