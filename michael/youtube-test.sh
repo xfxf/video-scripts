@@ -6,7 +6,7 @@ YT_SERVER="rtmp://a.rtmp.youtube.com/live2"
 # https://bugzilla.gnome.org/show_bug.cgi?id=731352#c6
 gst-launch-1.0 \
     videotestsrc is-live=1 \
-        ! "video/x-raw, width=1280, height=720, framerate=30/1" \
+        ! "video/x-raw, width=1280, height=720, framerate=25/1" \
         ! timeoverlay \
         ! x264enc bitrate=2000 ! "video/x-h264,profile=main" \
       ! queue ! mux. \
