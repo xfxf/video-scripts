@@ -12,63 +12,6 @@ class Source(object):
 	def __init__(self):
 		# it works much better with a local file
 
-		pipeline_test = """
-                        videotestsrc pattern=ball foreground-color=0x00ff0000 background-color=0x00440000 !
-                                timeoverlay !
-                                video/x-raw,format=I420,width=1280,height=720,framerate=30/1,pixel-aspect-ratio=1/1 !
-                                mux.
-
-                        audiotestsrc freq=330 !
-                                audio/x-raw,format=S16LE,channels=2,layout=interleaved,rate=48000 !
-                                mux.
-
-                        matroskamux name=mux !
-                                tcpclientsink host=%s port=10000
-				""" % ('192.168.0.10')
-
-		pipeline_broken = """
-            dv1394src !\
-            multiqueue !\
-                dvdemux name=demux \
-                alsasrc device=%s provide-clock=false !\
-                audio/x-raw,format=S16LE,channels=2,layout=interleaved,rate=48000 !\
-                queue !\
-                mux. \
-            demux. !\
-                dvdec !\
-                deinterlace !\
-                videoconvert !\
-                videorate !\
-                videoscale !\
-                video/x-raw,format=I420,width=1280,height=720,framerate=30/1,pixel-aspect-ratio=1/1 !\
-                queue !\
-                mux. \
-            matroskamux name=mux !\
-                tcpclientsink port=1000%s host=%s
-			""" % ('hw:1,0', '0', '192.168.0.10')
-
-
-		pipeline_videodv_audiotest = """
-           dv1394src !
-	   multiqueue !
-	   dvdemux !
-               	dvdec !
-                deinterlace !
-                videoconvert !
-                videorate !
-                videoscale !
-                video/x-raw,format=I420,width=1280,height=720,framerate=30/1,pixel-aspect-ratio=1/1 !
-                queue !
-		mux. 
-           audiotestsrc freq=330 !
-           	audio/x-raw,format=S16LE,channels=2,layout=interleaved,rate=48000 !
-                queue !
-		mux.
-
-                matroskamux name=mux !
-                	tcpclientsink host=%s port=10000
-                """ % ('192.168.0.10')
-
 		pipeline_videodv_audiopulse = """
            dv1394src !
            multiqueue !
@@ -90,6 +33,25 @@ class Source(object):
                         tcpclientsink host=%s port=10000
                 """ % ('alsa_input.usb-Burr-Brown_from_TI_USB_Audio_CODEC-00.analog-stereo', '192.168.0.10')
 
+		pipeline_hdmi2usb_noaudio = """
+        v4l2src device=%s !
+	    image/jpeg,width=1280,height=720 !
+            jpegdec !
+            videoconvert !
+         tee name=t ! queue ! 
+            videoconvert ! fpsdisplaysink sync=false t. ! 
+            videorate !
+            video/x-raw,format=I420,width=1280,height=720,framerate=30/1,pixel-aspect-ratio=1/1 !
+            queue !
+            mux. 
+        audiotestsrc !
+            audio/x-raw,format=S16LE,channels=2,layout=interleaved,rate=48000 !
+            queue !
+            mux. 
+        matroskamux name=mux !\
+            tcpclientsink port=1000%s host=%s
+                """ % ('/dev/video0', '1', '192.168.0.10')
+		
 		pipeline = pipeline_videodv_audiopulse
 
 		self.clock = GstNet.NetClientClock.new('voctocore', '192.168.0.10', 9998, 0)
