@@ -14,7 +14,7 @@
             queue !\
             mux. \
         \
-        alsasrc device=$VOC_ALSA_DEV provide-clock=false !\
+        alsasrc device=$DVS_ALSA_DEV provide-clock=false !\
             audio/x-raw,format=S16LE,channels=2,layout=interleaved,rate=48000 !\
             queue !\
             mux. \
