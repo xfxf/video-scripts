@@ -2,7 +2,7 @@
 #
 
 import re
-from .serialio import *
+from .serialio import SerialIO
 
 
 class Hdmi2Usb(SerialIO):

@@ -87,11 +87,13 @@ class SerialIO(object):
         :param bytes2send: bytes to send...
         """
         print(bytes.decode(bytes2send), end="")
-        for ch in bytes2send:
-            self.port.write(bytes(ch))
-            time.sleep(self.wait_byte)
-        time.sleep(self.wait_line)
-        return True
+        if self.port is not None and self.port.isOpen():
+            for ch in bytes2send:
+                self.port.write(bytes(ch))
+                time.sleep(self.wait_byte)
+            time.sleep(self.wait_line)
+            return True
+        return False
 
     def receiver(self):
         """

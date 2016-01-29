@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 
+import argparse
+import copy
 import queue
 import threading
+import time
 import tkinter
-import argparse
 from enum import Enum
 
-from opsis.hdmi2usb import *
+from opsis.hdmi2usb import Hdmi2Usb
 
 
 class SerialThread(threading.Thread):
@@ -45,13 +47,11 @@ class App:
             tkinter.PhotoImage(file='ok.gif'),
             tkinter.PhotoImage(file='error.gif'),
         ]
-        self.textlabel = tkinter.Label(self.root, text='HDMI2USB Status:', justify=tkinter.LEFT)
-        self.textlabel.pack()
         self.imagelabel = [None, None]
         self.status = [None, None]
         for i in range(2):
-            self.imagelabel[i] = tkinter.Label(self.root, image=self.images[0], justify=tkinter.RIGHT)
-            self.imagelabel[i].pack()
+            self.imagelabel[i] = tkinter.Label(self.root, image=self.images[0])
+            self.imagelabel[i].pack(side=tkinter.RIGHT, padx=1, pady=2)
             self.status[i] = { 'time': time.time(), 'status': Hdmi2UsbStatus.UNKNOWN, 'res': None }
         self.monitor = SerialThread(**kwargs)
 
@@ -76,20 +76,21 @@ class App:
 
     def check_status(self):
         status = copy.deepcopy(self.status)
-        if not self.events.empty():
-            while not self.events.empty():
-                event = self.events.get()
-                status[event['indev']] = event
+        while not self.events.empty():
+            event = self.events.get()
+            indev = event['indev']
+            status[indev] = event
         for indev in range(2):
-            if status[indev]['status'] != Hdmi2UsbStatus.UNKNOWN and status[indev]['time'] + self.timeout < self._now:
-                status['time'] = time._now
-                status['status'] = Hdmi2UsbStatus.UNKNOWN
-            if self.status[indev]['status'] != status[indev]['status']:
+            cstatus = status[indev]
+            ostatus = self.status[indev]
+            if cstatus['status'] != Hdmi2UsbStatus.UNKNOWN and cstatus['time'] + self.timeout < self._now:
+                cstatus['time'] = self._now
+                cstatus['status'] = Hdmi2UsbStatus.UNKNOWN
+            if ostatus['status'] != cstatus['status']:
                 """ need to update the UI """
-                newimage = self.images[status[indev]['status'].value]
-                self.imagelabel[indev].configure(image=newimage)
+                self.imagelabel[indev].configure(image=self.images[cstatus['status'].value])
                 self.imagelabel[indev].pack()
-            self.status[indev] = status[indev]
+            self.status[indev] = copy.copy(cstatus)
         self.schedule()
 
 
