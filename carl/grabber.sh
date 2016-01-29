@@ -1,7 +1,7 @@
 #!/bin/bash -ex
 
 # hdmi2usb, generated audio, local display (including fps)
-# used for screen grabber, loops and sends to core
+# used for screen grabber, sends to core (over te wire)
 
     gst-launch-1.0 \
         v4l2src device=$HDMI2USB !\

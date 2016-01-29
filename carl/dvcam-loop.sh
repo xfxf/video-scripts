@@ -8,6 +8,7 @@ while true; do
 
     ./dv-camera-alsa.sh 0
     # ./3c-dv-camera-audio.sh 0
+    ./lca-voctomix-ingest.py dvpulse 0
 
     sleep 1
 
