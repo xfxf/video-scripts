@@ -1,0 +1,30 @@
+//
+// Created by David Nugent on 31/01/2016.
+//
+
+#ifndef OPSISD_OPISD_H
+#define OPSISD_OPISD_H
+
+#define OPSISD_VERSION "0.1"
+#define OPSISD_NAME "opsisd"
+
+#define OPSIS_MAX_PORTS 31
+
+struct opsisd_opts {
+    int verbose;
+    int daemonize;
+    long baudrate;
+    char *port;
+    char *listen_addr;
+    short listen_port;
+};
+
+enum Verbosity {
+    V_QUIET,
+    V_ERROR,
+    V_INFO,
+    V_DEBUG,
+    V_TRACE
+};
+
+#endif //OPSISD_OPISD_H
