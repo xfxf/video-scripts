@@ -1,5 +1,10 @@
 //
+// Created by David Nugent on 30/01/2016.
+//
+// main.c
+//
 // Startup, argument parsing and handoff to daemon process
+// Very little application specific code to see here, move on...
 
 #include <stdio.h>
 #include <getopt.h>
@@ -125,7 +130,6 @@ parse_args(int argc, char * const *argv, struct opsisd_opts *opts) {
                 break;
         }
     }
-
     return rc;
 }
 
@@ -153,20 +157,19 @@ usage(FILE *out, int ec) {
 
 int
 main(int argc, char * const *argv) {
-    struct opsisd_opts opts = {};
+    struct opsisd opsisd = {};
 
-    int rc = parse_args(argc, argv, &opts);
+    int rc = parse_args(argc, argv, &opsisd.opts);
     if (rc == 0) {
         FILE *log = stdout;
-        if (opts.verbose >= V_DEBUG) {
-            fprintf(log, "      Device : %s\n", opts.port);
-            fprintf(log, "    Baudrate : %ld\n", baud_to_speed(opts.baudrate));
-            fprintf(log, "Bind Address : %s\n", opts.listen_addr);
-            fprintf(log, "   Bind Port : %u\n", opts.listen_port);
-            fprintf(log, "   Daemonize : %s\n", opts.daemonize ? "Yes" : "No");
-            fprintf(log, "   Verbosity : %d\n", opts.verbose);
+        if (opsisd.opts.verbose >= V_DEBUG) {
+            fprintf(log, "      Device : %s\n", opsisd.opts.port);
+            fprintf(log, "    Baudrate : %ld\n", baud_to_speed(opsisd.opts.baudrate));
+            fprintf(log, "Bind Address : %s\n", opsisd.opts.listen_addr);
+            fprintf(log, "   Bind Port : %u\n", opsisd.opts.listen_port);
+            fprintf(log, "   Daemonize : %s\n", opsisd.opts.daemonize ? "Yes" : "No");
+            fprintf(log, "   Verbosity : %d\n", opsisd.opts.verbose);
         }
     }
-
     return rc;
 }

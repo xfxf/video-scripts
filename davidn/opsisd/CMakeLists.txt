@@ -1,7 +1,14 @@
-cmake_minimum_required(VERSION 3.2)
-project(opsisd)
+cmake_minimum_required(VERSION 3.4)
+project(opsis)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 
-set(SOURCE_FILES main.c opsisd.c opsisd.h serial.c serial.h)
-add_executable(opsisd ${SOURCE_FILES})
+set(OPSISD_SOURCE_FILES
+    opsisd/main.c
+    opsisd/opsisd.c
+    opsisd/opsisd.h
+    opsisd/serial.c
+    opsisd/serial.h)
+
+add_executable(opsisd ${OPSISD_SOURCE_FILES})
+
