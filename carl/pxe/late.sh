@@ -443,6 +443,7 @@ wget http://$SHAZ/lc/Desktop/GRABBER.GIF
 wget http://$SHAZ/lc/Desktop/dvcam.png 
 wget http://$SHAZ/lc/Desktop/clock.jpg
 wget http://$SHAZ/lc/Desktop/high-voltage-sign-russian.png
+wget http://$SHAZ/lc/Desktop/FlashBack_icon_colour_2.jpg
 wget http://$SHAZ/avsync.ts
 
 # make a default settings file
@@ -524,6 +525,21 @@ Exec=/home/$nuser/lca/dvsmon/prod.sh
 Terminal=true
 Type=Application
 Icon=/home/$nuser/lca/dvsmon/dvswitch-logo.svg
+Categories=AudioVideo;
+EOT
+chmod 744 $APP
+chown $nuser:$nuser $APP
+
+
+APP=17-flash.desktop
+cat <<EOT > $APP
+[Desktop Entry]
+Name=Flash Atlys
+Comment=Not Opsis
+Exec=/home/$nuser/lca/video-scripts/carl/atlys_setup.sh
+Terminal=true
+Type=Application
+Icon=/home/$nuser/lca/FlashBack_icon_colour_2.jpg
 Categories=AudioVideo;
 EOT
 chmod 744 $APP
