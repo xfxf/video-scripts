@@ -15,6 +15,7 @@ gst-launch-1.0 \
 	! dvdemux name=demux \
 	! queue \
 	! dvdec \
+	! deinterlace \
 	! videoconvert \
 	! videoscale ! video/x-raw,width=1280,height=720,pixel-aspect-ratio=\(fraction\)1/1 \
 	! x264enc bitrate=2000 byte-stream=false key-int-max=60 bframes=0 aud=true tune=zerolatency ! "video/x-h264,profile=main" \
