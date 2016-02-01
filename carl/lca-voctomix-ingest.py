@@ -34,9 +34,7 @@ class Source(object):
         if pipeline_name == 'dvpulse':
             pipeline = """
             dv1394src name=videosrc !
-            multiqueue !
             dvdemux !
-                queue !
 		dvdec !
 		tee name=t ! queue !
 		    videoconvert ! fpsdisplaysink sync=false t. !
@@ -58,9 +56,7 @@ class Source(object):
         elif pipeline_name == 'hdvpulse':
             pipeline = """
             hdv1394src name=videosrc !
-            multiqueue !
 	    tsdemux !
-		queue !
 		decodebin !
 		tee name=t ! queue !
 		    videoconvert ! fpsdisplaysink sync=false t. !
@@ -82,17 +78,19 @@ class Source(object):
         elif pipeline_name == 'blackmagichdmi':
             pipeline = """
             decklinkvideosrc mode=17 connection=2 !
-                queue !
-                videoconvert !
+		tee name=t ! queue !
+		    videoconvert ! fpsdisplaysink sync=false t. ! 
+		videoconvert !
                 videorate !
                 videoscale !
                 video/x-raw,format=I420,width=1280,height=720,framerate=30/1,pixel-aspect-ratio=1/1 !
                 queue !
-                mux. 
+		mux. 
             decklinkaudiosrc !
-                audio/x-raw,format=S16LE,channels=2,layout=interleaved,rate=48000 !
+                multiqueue !
+		audio/x-raw,format=S16LE,channels=2,layout=interleaved,rate=48000 !
                 queue !
-                mux. 
+		mux. 
             matroskamux name=mux !\
                 tcpclientsink port=1000%s host=%s
                 """ % (voc_port, voc_core_ip)
@@ -100,7 +98,7 @@ class Source(object):
         elif pipeline_name == 'hdmi2usb':
             pipeline = """
             v4l2src device=%s name=videosrc !
-                queue !
+            queue !
 		image/jpeg,width=1280,height=720 !
                 jpegdec !
                 videoconvert !
@@ -120,16 +118,14 @@ class Source(object):
 
         else: #test
             pipeline = """
-         videotestsrc name=videosrc pattern=ball foreground-color=0x00ff0000 background-color=0x00440000 !
+            videotestsrc name=videosrc pattern=ball foreground-color=0x00ff0000 background-color=0x00440000 !
                  timeoverlay !
                  video/x-raw,format=I420,width=1280,height=720,framerate=30/1,pixel-aspect-ratio=1/1 !
                  mux.
-
-         audiotestsrc name=audiosrc freq=330 !
+            audiotestsrc name=audiosrc freq=330 !
                  audio/x-raw,format=S16LE,channels=2,layout=interleaved,rate=48000 !
                  mux.
-
-         matroskamux name=mux !
+            matroskamux name=mux !
                  tcpclientsink port=1000%s host=%s
                  """ % (voc_port, voc_core_ip)
 
