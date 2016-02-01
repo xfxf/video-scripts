@@ -7,7 +7,7 @@ PIPELINES:
  * blackmagichdmi
  * test
 
-Intended uses (NOTE expected environment variables):
+Example intended uses (NOTE expected environment variables):
  * lca-videomix-ingest.py dvpulse 0
  * lca-videomix-ingest.py hdmi2usb 1
 """ 
@@ -79,6 +79,24 @@ class Source(object):
                     tcpclientsink port=1000%s host=%s
                 """ % (pulse_device, voc_port, voc_core_ip)
 
+        elif pipeline_name == 'blackmagichdmi':
+            pipeline = """
+            decklinkvideosrc mode=17 connection=2 !
+                queue !
+                videoconvert !
+                videorate !
+                videoscale !
+                video/x-raw,format=I420,width=1280,height=720,framerate=30/1,pixel-aspect-ratio=1/1 !
+                queue !
+                mux. 
+            decklinkaudiosrc !
+                audio/x-raw,format=S16LE,channels=2,layout=interleaved,rate=48000 !
+                queue !
+                mux. 
+            matroskamux name=mux !\
+                tcpclientsink port=1000%s host=%s
+                """ % (voc_port, voc_core_ip)
+ 
         elif pipeline_name == 'hdmi2usb':
             pipeline = """
             v4l2src device=%s name=videosrc !

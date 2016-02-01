@@ -343,11 +343,11 @@ printf "export SHAZ=$SHAZ\n" >> .bashrc
 
 printf "\n# Vocto settings:\n" >> .bashrc
 printf "export HDMI2USB=/dev/video0\n" >> .bashrc
-printf "export VOC_PULSE_DEV=''\n" >> .bashrc
-printf "# For slave, replace this with hostname of box running vocto core\n" >> .bashrc
+
+printf "\n# If this isn't the right device just google and you will find it.\n" >> .bashrc
+printf "export VOC_PULSE_DEV='alsa_input.usb-Burr-Brown_from_TI_USB_Audio_CODEC-00.analog-stereo'\n" >> .bashrc
+printf "# hostname of box running vocto core\n" >> .bashrc
 printf "export VOC_CORE=$mix\n" >> .bashrc
-# printf "\n# for core, hostname of box running grabber\n" >> .bashrc
-# printf "export VOC_SLAVE=\n" >> .bashrc
 
 printf "\n# DVswitch settings:\n" >> .bashrc
 printf "export DVS_CAM=r${room}cam\n" >> .bashrc
@@ -432,16 +432,18 @@ mkdir lca
 cd lca
 
 git clone http://$SHAZ/git/video-scripts.git
-git clone http://$SHAZ/git/voctomix.git
+git clone http://$SHAZ/git/voctomix.git --branch nettime
 git clone http://$SHAZ/git/clocky.git
 git clone http://$SHAZ/git/dvsmon.git
 git clone http://$SHAZ/git/HDMI2USB-firmware-prebuilt.git
+git clone http://$SHAZ/git/HDMI2USB-mode-switch.git --branch opsis-prod
 
 wget http://$SHAZ/lc/Desktop/dsotm.png 
 wget http://$SHAZ/lc/Desktop/GRABBER.GIF 
 wget http://$SHAZ/lc/Desktop/dvcam.png 
 wget http://$SHAZ/lc/Desktop/clock.jpg
 wget http://$SHAZ/lc/Desktop/high-voltage-sign-russian.png
+wget http://$SHAZ/lc/Desktop/FlashBack_icon_colour_2.jpg
 wget http://$SHAZ/avsync.ts
 
 # make a default settings file
@@ -463,7 +465,7 @@ APP=1-voc.desktop
 cat <<EOT > $APP
 [Desktop Entry]
 Version=1.0
-Name=1 Vocto Recording System
+Name=Vocto Recording System
 GenericName=Wooo Go!
 Comment=No Comment
 Type=Application
@@ -478,7 +480,7 @@ APP=2-dvcam.desktop
 cat <<EOT > $APP
 [Desktop Entry]
 Version=1.0
-Name=2 DV Cam
+Name=DV Cam
 Type=Application
 Icon=/home/$nuser/lca/dvcam.png
 Vendor=TimVideos
@@ -491,7 +493,7 @@ APP=3-grabber.desktop
 cat <<EOT > $APP
 [Desktop Entry]
 Version=1.0
-Name=3 Screen Grabber
+Name=Screen Grabber
 Type=Application
 Icon=/home/$nuser/lca/GRABBER.GIF
 Vendor=TimVideos
@@ -505,7 +507,7 @@ APP=4-kill_vocto.desktop
 cat <<EOT > $APP
 [Desktop Entry]
 Version=1.0
-Name=4 Kill Vocto
+Name=Kill Vocto
 Type=Application
 Icon=/home/$nuser/lca/high-voltage-sign-russian.png
 Vendor=TimVideos
@@ -517,7 +519,7 @@ chown $nuser:$nuser $APP
 APP=9-dvsmon.desktop
 cat <<EOT > $APP
 [Desktop Entry]
-Name=9 DVswitch Launcher
+Name=DVswitch Launcher
 Comment=Manages DVswitch components
 Exec=/home/$nuser/lca/dvsmon/prod.sh
 Terminal=true
@@ -528,10 +530,25 @@ EOT
 chmod 744 $APP
 chown $nuser:$nuser $APP
 
+
+APP=17-flash.desktop
+cat <<EOT > $APP
+[Desktop Entry]
+Name=Flash Atlys
+Comment=Not Opsis
+Exec=/home/$nuser/lca/video-scripts/carl/atlys_setup.sh
+Terminal=true
+Type=Application
+Icon=/home/$nuser/lca/FlashBack_icon_colour_2.jpg
+Categories=AudioVideo;
+EOT
+chmod 744 $APP
+chown $nuser:$nuser $APP
+
 APP=20-clocky.desktop
 cat <<EOT > $APP
 [Desktop Entry]
-Name=20 Clocky
+Name=Clocky
 Comment=Thankyou David Goodger
 Exec=/home/$nuser/lca/clocky/wxclock.py
 Type=Application
@@ -541,9 +558,39 @@ EOT
 chmod 744 $APP
 chown $nuser:$nuser $APP
 
-
 cd ..
 
-chown $nuser:$nuser -R Desktop lca
+cat > bin/organise-desktop.sh <<EOF
+#!/bin/sh
+
+set -euf
+
+seq 10 | while read i; do
+	pgrep nautilus && break
+	sleep 1
+done
+
+i=32
+ls Desktop | sort -n | while read fn; do
+	gvfs-set-attribute -t string Desktop/\$fn metadata::nautilus-icon-position "64,\$i"
+	i=\$((\$i + 100))
+done
+
+#rm -f .config/autostart/organise.desktop
+nautilus -q
+nautilus -n
+EOF
+chmod +x bin/organise-desktop.sh
+
+mkdir -p .config/autostart
+cat > .config/autostart/organise.desktop <<EOF
+[Desktop Entry]
+Type=Application
+Name=Organize desktop
+Exec=~/bin/organise-desktop.sh
+X-GNOME-Autostart-enabled=true
+EOF
+
+chown $nuser:$nuser -R Desktop lca .config bin
 
 
