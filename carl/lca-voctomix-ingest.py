@@ -38,7 +38,7 @@ class Source(object):
 		queue !
 		dvdec !
 		tee name=t ! queue !
-		    videoconvert ! fpsdisplaysink sync=false t. !
+		    videoconvert ! fpsdisplaysink sync=false t. ! queue !
 		deinterlace mode=1 !
 		videoconvert !
                 videorate !
@@ -61,7 +61,7 @@ class Source(object):
 		queue !
 		decodebin !
 		tee name=t ! queue !
-		    videoconvert ! fpsdisplaysink sync=false t. !
+		    videoconvert ! fpsdisplaysink sync=false t. ! queue !
 		deinterlace mode=1 !
 		videorate !
                 videoscale !
@@ -81,7 +81,7 @@ class Source(object):
             pipeline = """
             decklinkvideosrc mode=17 connection=2 !
 		tee name=t ! queue !
-		    videoconvert ! fpsdisplaysink sync=false t. ! 
+		    videoconvert ! fpsdisplaysink sync=false t. ! queue !
 		videoconvert !
                 videorate !
                 videoscale !
@@ -104,7 +104,7 @@ class Source(object):
                 jpegdec !
                 videoconvert !
                 tee name=t ! queue ! 
-                    videoconvert ! fpsdisplaysink sync=false t. ! 
+                    videoconvert ! fpsdisplaysink sync=false t. ! queue !
                 videorate !
                 video/x-raw,format=I420,width=1280,height=720,framerate=30/1,pixel-aspect-ratio=1/1 !
                 queue !
