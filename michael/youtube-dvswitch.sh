@@ -20,6 +20,7 @@ gst-launch-1.0 \
 	! videoscale ! video/x-raw,width=1280,height=720,pixel-aspect-ratio=\(fraction\)1/1 \
 	! x264enc bitrate=2000 byte-stream=false key-int-max=60 bframes=0 aud=true tune=zerolatency ! "video/x-h264,profile=main" \
 	! flvmux streamable=true name=mux \
+	! queue \
 	! rtmpsink location="${YT_SERVER}/x/${AUTH} app=live2" demux. \
 	! queue \
 	! audioconvert ! voaacenc bitrate=128000 ! mux.
