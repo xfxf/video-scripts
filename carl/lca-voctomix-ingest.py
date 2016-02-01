@@ -34,7 +34,8 @@ class Source(object):
         if pipeline_name == 'dvpulse':
             pipeline = """
             dv1394src name=videosrc !
-            dvdemux !
+		dvdemux !
+		queue !
 		dvdec !
 		tee name=t ! queue !
 		    videoconvert ! fpsdisplaysink sync=false t. !
@@ -46,7 +47,7 @@ class Source(object):
                 queue !
             mux. 
                 pulsesrc device=%s name=audiosrc !
-                audio/x-raw,format=S16LE,channels=2,layout=interleaved,rate=48000 !
+		audio/x-raw,format=S16LE,channels=2,layout=interleaved,rate=48000 !
                 queue !
             mux.
                 matroskamux name=mux !
@@ -56,7 +57,8 @@ class Source(object):
         elif pipeline_name == 'hdvpulse':
             pipeline = """
             hdv1394src name=videosrc !
-	    tsdemux !
+		tsdemux !
+		queue !
 		decodebin !
 		tee name=t ! queue !
 		    videoconvert ! fpsdisplaysink sync=false t. !
@@ -68,7 +70,7 @@ class Source(object):
                 queue !
             mux. 
                 pulsesrc device=%s name=audiosrc !
-                audio/x-raw,format=S16LE,channels=2,layout=interleaved,rate=48000 !
+		audio/x-raw,format=S16LE,channels=2,layout=interleaved,rate=48000 !
                 queue !
             mux.
                 matroskamux name=mux !
@@ -87,7 +89,6 @@ class Source(object):
                 queue !
 		mux. 
             decklinkaudiosrc !
-                multiqueue !
 		audio/x-raw,format=S16LE,channels=2,layout=interleaved,rate=48000 !
                 queue !
 		mux. 
