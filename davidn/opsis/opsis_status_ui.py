@@ -3,12 +3,14 @@
 import argparse
 import copy
 import queue
+import sys
 import threading
 import time
 import tkinter
 from enum import Enum
 
-from opsis.hdmi2usb import Hdmi2Usb
+sys.path.append('../')
+from hdmi2usb.hdmi2usb import Hdmi2Usb
 
 
 class SerialThread(threading.Thread):
@@ -43,9 +45,9 @@ class App:
         self.root.geometry('+100+100')
         self.root.wm_title('HDMI2USB Status')
         self.images = [
-            tkinter.PhotoImage(file='off.gif'),
-            tkinter.PhotoImage(file='ok.gif'),
-            tkinter.PhotoImage(file='error.gif'),
+            tkinter.PhotoImage(file='images/off.gif'),
+            tkinter.PhotoImage(file='images/ok.gif'),
+            tkinter.PhotoImage(file='images/error.gif'),
         ]
         self.imagelabel = [None, None]
         self.status = [None, None]
