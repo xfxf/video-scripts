@@ -145,10 +145,15 @@ class Source(object):
 
         # Adjust slower video sources
         if 'pipeline_name' is 'hdvpulse' or 'dvpulse':
-            avsync_delay = 2 * 1000000000 # in ns, override env for testing
-            print('Adjusting AV sync by %s....' % avsync_delay)
-            self.videosrc = self.senderPipeline.get_by_name('videosrc')
-            self.videosrc.get_static_pad('src').set_offset(avsync_delay)
+            video_delay = 0 * 1000000000 # in ns, override env for testing
+            audio_delay = 0.4 * 1000000000  
+            print('Adjusting AV sync: [video: {}] [audio: {}]'.format(video_delay, audio_delay))
+            if video_delay > 0:
+                self.videosrc = self.senderPipeline.get_by_name('videosrc')
+                self.videosrc.get_static_pad('src').set_offset(video_delay)
+            if audio_delay > 0:
+                self.videosrc = self.senderPipeline.get_by_name('audiosrc')
+                self.videosrc.get_static_pad('src').set_offset(audio_delay)
 
         # Binding End-of-Stream-Signal on Source-Pipeline
         self.senderPipeline.bus.add_signal_watch()
