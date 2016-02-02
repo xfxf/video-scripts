@@ -14,10 +14,12 @@
 // configuration data
 struct opsisd_opts {
     int verbose;
+    int logflags;
+    char const *logfile;
     int daemonize;
     long baudrate;
-    char *port;
-    char *listen_addr;
+    char const *port;
+    char const *listen_addr;
     short listen_port;
 };
 
@@ -26,14 +28,17 @@ struct opsisd {
     struct opsisd_opts opts;
 };
 
-enum Verbosity {
-    V_QUIET,
-    V_ERROR,
-    V_INFO,
-    V_DEBUG,
-    V_TRACE
+
+// controller serial device llist node
+struct ctrldev {
+    struct ctrldev *next;
+    char *devname;
 };
 
-char const *find_opsis_serial(const struct opsisd_opts *opts);
+struct ctrldev *find_opsis_serial_all(const struct opsisd_opts *opts);
+void ctrldev_free(struct ctrldev *first_dev);
+char *find_opsis_serial(const struct opsisd_opts *opts);
+
+
 
 #endif //OPSISD_OPISD_H
