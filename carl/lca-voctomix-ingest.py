@@ -2,10 +2,12 @@
 """
 PIPELINES:
  * dvpulse
+ * hdvpulse
  * hdmi2usb
+ * blackmagichdmi
  * test
 
-Intended uses (NOTE expected environment variables):
+Example intended uses (NOTE expected environment variables):
  * lca-videomix-ingest.py dvpulse 0
  * lca-videomix-ingest.py hdmi2usb 1
 """ 
@@ -31,38 +33,83 @@ class Source(object):
 
         if pipeline_name == 'dvpulse':
             pipeline = """
-            dv1394src !
-            multiqueue !
-            dvdemux !
-                dvdec !
-                deinterlace !
-                videoconvert !
+            dv1394src name=videosrc !
+		dvdemux !
+		queue !
+		dvdec !
+		tee name=t ! queue !
+		    videoconvert ! fpsdisplaysink sync=false t. ! queue !
+		deinterlace mode=1 !
+		videoconvert !
                 videorate !
                 videoscale !
                 video/x-raw,format=I420,width=1280,height=720,framerate=30/1,pixel-aspect-ratio=1/1 !
                 queue !
             mux. 
-                pulsesrc device=%s !
-                audio/x-raw,format=S16LE,channels=2,layout=interleaved,rate=48000 !
+                pulsesrc device=%s name=audiosrc !
+		audio/x-raw,format=S16LE,channels=2,layout=interleaved,rate=48000 !
                 queue !
             mux.
                 matroskamux name=mux !
                     tcpclientsink port=1000%s host=%s
                 """ % (pulse_device, voc_port, voc_core_ip)
-            
+           
+        elif pipeline_name == 'hdvpulse':
+            pipeline = """
+            hdv1394src do-timestamp=true name=videosrc !
+		tsdemux !
+		queue !
+		decodebin !
+		tee name=t ! queue !
+		    videoconvert ! fpsdisplaysink sync=false t. ! queue !
+		deinterlace mode=1 !
+		videorate !
+                videoscale !
+		videoconvert !
+		video/x-raw,format=I420,width=1280,height=720,framerate=30/1,pixel-aspect-ratio=1/1 !
+                queue !
+            mux. 
+                pulsesrc device=%s name=audiosrc !
+		audio/x-raw,format=S16LE,channels=2,layout=interleaved,rate=48000 !
+                queue !
+            mux.
+                matroskamux name=mux !
+                    tcpclientsink port=1000%s host=%s
+                """ % (pulse_device, voc_port, voc_core_ip)
+
+        elif pipeline_name == 'blackmagichdmi':
+            pipeline = """
+            decklinkvideosrc mode=17 connection=2 !
+		tee name=t ! queue !
+		    videoconvert ! fpsdisplaysink sync=false t. ! queue !
+		videoconvert !
+                videorate !
+                videoscale !
+                video/x-raw,format=I420,width=1280,height=720,framerate=30/1,pixel-aspect-ratio=1/1 !
+                queue !
+		mux. 
+            decklinkaudiosrc !
+		audio/x-raw,format=S16LE,channels=2,layout=interleaved,rate=48000 !
+                queue !
+		mux. 
+            matroskamux name=mux !\
+                tcpclientsink port=1000%s host=%s
+                """ % (voc_port, voc_core_ip)
+ 
         elif pipeline_name == 'hdmi2usb':
             pipeline = """
-            v4l2src device=%s !
-                image/jpeg,width=1280,height=720 !
+            v4l2src device=%s name=videosrc !
+            queue !
+		image/jpeg,width=1280,height=720 !
                 jpegdec !
                 videoconvert !
                 tee name=t ! queue ! 
-                    videoconvert ! fpsdisplaysink sync=false t. ! 
+                    videoconvert ! fpsdisplaysink sync=false t. ! queue !
                 videorate !
                 video/x-raw,format=I420,width=1280,height=720,framerate=30/1,pixel-aspect-ratio=1/1 !
                 queue !
                 mux. 
-            audiotestsrc !
+            audiotestsrc name=audiosrc !
                 audio/x-raw,format=S16LE,channels=2,layout=interleaved,rate=48000 !
                 queue !
                 mux. 
@@ -70,18 +117,16 @@ class Source(object):
                 tcpclientsink port=1000%s host=%s
                 """ % (hdmi2usb_device, voc_port, voc_core_ip)
 
-        else:
+        else: #test
             pipeline = """
-        videotestsrc pattern=ball foreground-color=0x00ff0000 background-color=0x00440000 !
+            videotestsrc name=videosrc pattern=ball foreground-color=0x00ff0000 background-color=0x00440000 !
                  timeoverlay !
                  video/x-raw,format=I420,width=1280,height=720,framerate=30/1,pixel-aspect-ratio=1/1 !
                  mux.
-
-         audiotestsrc freq=330 !
+            audiotestsrc name=audiosrc freq=330 !
                  audio/x-raw,format=S16LE,channels=2,layout=interleaved,rate=48000 !
                  mux.
-
-         matroskamux name=mux !
+            matroskamux name=mux !
                  tcpclientsink port=1000%s host=%s
                  """ % (voc_port, voc_core_ip)
 
@@ -97,6 +142,18 @@ class Source(object):
         self.senderPipeline = Gst.parse_launch(pipeline)
         self.senderPipeline.use_clock(self.clock)
         self.src = self.senderPipeline.get_by_name('src')
+
+        # Adjust slower video sources
+        if 'pipeline_name' is 'hdvpulse' or 'dvpulse':
+            video_delay = 0 * 1000000000 # in ns, override env for testing
+            audio_delay = 0.25 * 1000000000  
+            print('Adjusting AV sync: [video: {}] [audio: {}]'.format(video_delay, audio_delay))
+            if video_delay > 0:
+                self.videosrc = self.senderPipeline.get_by_name('videosrc')
+                self.videosrc.get_static_pad('src').set_offset(video_delay)
+            if audio_delay > 0:
+                self.videosrc = self.senderPipeline.get_by_name('audiosrc')
+                self.videosrc.get_static_pad('src').set_offset(audio_delay)
 
         # Binding End-of-Stream-Signal on Source-Pipeline
         self.senderPipeline.bus.add_signal_watch()
@@ -124,6 +181,7 @@ def main():
     voc_core_hostname = os.environ.get('VOC_CORE', 'localhost')
     hdmi2usb_device = os.environ.get('HDMI2USB', '/dev/video0')
     pulse_device = os.environ.get('VOC_PULSE_DEV', 'alsa_input.usb-Burr-Brown_from_TI_USB_Audio_CODEC-00.analog-stereo')
+    avsync_delay = os.environ.get('AVSYNC_DELAY', '10')
 
     # get parameters (pipeline_name, vocto port ending digit in 1000x)
     try:

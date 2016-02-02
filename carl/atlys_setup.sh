@@ -1,4 +1,4 @@
-#!/bin/bash -ex
+#!/bin/bash -x
 
 # sudo apt-add-repository --yes ppa:timvideos/fpga-support
 # sudo apt-add-repository --yes ppa:timvideos/dvswitch
@@ -12,12 +12,18 @@
 # git clone https://github.com/timvideos/HDMI2USB-firmware-prebuilt.git
 # cd ~/HDMI2USB-firmware-prebuilt/atlys/firmware/unstable
 
+cd ~/lca/video-scripts/carl/atlys-firmware
+
 openocd -f board/digilent_atlys.cfg -c "init; pld load 0 atlys_hdmi2usb-hdmi2usbsoc-atlys.bit; exit"
 
 fxload -B libusb -D vid=0x16c0,pid=0x06ad -t fx2lp -I hdmi2usb.hex
+flterm --port /dev/ttyVIZ0 --speed 115200 
 
-echo flterm --port /dev/ttyVIZ0 --speed 115200 
+mplayer tv:// -tv driver=v4l2:device=$HDMI2USB
 
-echo mplayer tv:// -tv driver=v4l2:device=$HDMI2USB
+echo if you see yourself in a web cam, fix this:
+grep HDMI2USB ~/.bashrc
+echo vim ~/.bashrc
+echo
 
 
