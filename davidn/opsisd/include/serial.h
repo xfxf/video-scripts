@@ -19,6 +19,7 @@ struct serial_config {
 
 struct serial_device {
     struct device dev;
-
 };
+
+
 #endif

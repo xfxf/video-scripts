@@ -16,7 +16,8 @@ enum Verbosity {
     V_WARN,
     V_INFO,
     V_DEBUG,
-    V_TRACE
+    V_TRACE,
+    V_MAX = V_TRACE
 };
 
 enum LogOption {
@@ -37,13 +38,12 @@ extern void log_rotate();               // close current log (if any), start a n
 extern char const *log_name();          // current log name (NULL if none)
 
 // Logging functions
-extern void log_log(enum Verbosity level, char const *fmt, ...) __attribute__((format (printf, 2, 3)));
-
+extern void log_message(enum Verbosity verbose, char const *fmt, ...) __attribute__((format (printf, 2, 3)));
 extern void log_fatal(char const *fmt, ...) __attribute__((format (printf, 1, 2)));
 extern void log_critical(char const *fmt, ...) __attribute__((format (printf, 1, 2)));
 extern void log_error(char const *fmt, ...) __attribute__((format (printf, 1, 2)));
 extern void log_warning(char const *fmt, ...) __attribute__((format (printf, 1, 2)));
-extern void log_info(char const *fmt, ...) __attribute__((format (printf, 2, 2)));
+extern void log_info(char const *fmt, ...) __attribute__((format (printf, 1, 2)));
 extern void log_debug(char const *fmt, ...) __attribute__((format (printf, 1, 2)));
 extern void log_trace(char const *fmt, ...) __attribute__((format (printf, 1, 2)));
 

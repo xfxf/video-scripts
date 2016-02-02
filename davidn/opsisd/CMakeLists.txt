@@ -13,15 +13,16 @@ if (APPLE)
     add_definitions(-D__GLIBCXX__)
 endif (APPLE)
 
-include_directories(src)
+include_directories(include)
 
 set(OPSISD_SOURCE_FILES
-        src/opsisd.c src/opsisd.h
-        src/serial.c src/serial.h
-        src/network.c src/network.h
-        src/logging.c src/logging.h)
+        src/opsisd.c include/opsisd.h
+        src/serial.c include/serial.h
+        src/network.c include/network.h
+        src/logging.c include/logging.h
+        src/device.c include/device.h)
 
-add_executable(opsisd src/main.c ${OPSISD_SOURCE_FILES} src/selector.h src/device.c src/device.h)
+add_executable(opsisd src/main.c ${OPSISD_SOURCE_FILES})
 
 ####
 # test support
@@ -40,17 +41,11 @@ if (tests)
     # unit tests
     ####
 
-    set(SERIAL_UNIT_TEST_SOURCE_FILES
-            tests/serial/test_find_opsis_serial.cc)
-
-    set(LOGGING_UNIT_TEST_SOURCE_FILES
-            tests/logging/test_basic_logging.cc)
-
-    add_executable(runSerialUnitTests ${SERIAL_UNIT_TEST_SOURCE_FILES} ${OPSISD_SOURCE_FILES})
+    add_executable(runSerialUnitTests ${OPSISD_SOURCE_FILES} tests/serial/test_find_opsis_serial.cc)
     target_link_libraries(runSerialUnitTests gtest gtest_main)
     add_test(opsis_serial_interface runSerialUnitTests)
 
-    add_executable(runLoggingUnitTests ${LOGGING_UNIT_TEST_SOURCE_FILES} ${OPSISD_SOURCE_FILES})
+    add_executable(runLoggingUnitTests ${OPSISD_SOURCE_FILES} tests/logging/test_basic_logging.cc)
     target_link_libraries(runLoggingUnitTests gtest gtest_main)
     add_test(opsis_logging runLoggingUnitTests)
 
