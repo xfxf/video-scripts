@@ -1,14 +1,57 @@
 cmake_minimum_required(VERSION 3.4)
-project(opsis)
+
+option(tests "Build all tests." OFF)         # cmake -Dtest=ON
+
+set(PROJECT_NAME opsisd)
+project(${PROJECT_NAME})
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+
+if (APPLE)
+    add_definitions(-DGTEST_USE_OWN_TR1_TUPLE)
+    add_definitions(-D__GLIBCXX__)
+endif (APPLE)
+
+include_directories(src)
 
 set(OPSISD_SOURCE_FILES
-    opsisd/main.c
-    opsisd/opsisd.c
-    opsisd/opsisd.h
-    opsisd/serial.c
-    opsisd/serial.h)
+        src/opsisd.c src/opsisd.h
+        src/serial.c src/serial.h
+        src/network.c src/network.h
+        src/logging.c src/logging.h)
 
-add_executable(opsisd ${OPSISD_SOURCE_FILES})
+add_executable(opsisd src/main.c ${OPSISD_SOURCE_FILES} src/selector.h src/device.c src/device.h)
 
+####
+# test support
+####
+
+if (tests)
+
+    # add googletest gtest/gmock to test builds
+    add_subdirectory( tests/googletest )
+    enable_testing()
+
+    include_directories( ${gtest_SOURCE_DIR}/include )
+    include_directories( ${gmock_SOURCE_DIR}/include )
+
+    ####
+    # unit tests
+    ####
+
+    set(SERIAL_UNIT_TEST_SOURCE_FILES
+            tests/serial/test_find_opsis_serial.cc)
+
+    set(LOGGING_UNIT_TEST_SOURCE_FILES
+            tests/logging/test_basic_logging.cc)
+
+    add_executable(runSerialUnitTests ${SERIAL_UNIT_TEST_SOURCE_FILES} ${OPSISD_SOURCE_FILES})
+    target_link_libraries(runSerialUnitTests gtest gtest_main)
+    add_test(opsis_serial_interface runSerialUnitTests)
+
+    add_executable(runLoggingUnitTests ${LOGGING_UNIT_TEST_SOURCE_FILES} ${OPSISD_SOURCE_FILES})
+    target_link_libraries(runLoggingUnitTests gtest gtest_main)
+    add_test(opsis_logging runLoggingUnitTests)
+
+endif()

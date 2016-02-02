@@ -1,6 +1,11 @@
+//
+// Created by David Nugent on 31/01/2016.
+//
 
 #include <termios.h>
 #include "serial.h"
+
+// Miscellaneous serial functions
 
 static long baudmap[][2] = {
     {B300,     300      },
@@ -28,6 +33,9 @@ static long baudmap[][2] = {
 #endif
     {B0,       0        }
 };
+
+// System specific speed to baud translations
+// Baud rate values are those define for serial ports for the host OS
 
 long
 speed_to_baud(long speed) {

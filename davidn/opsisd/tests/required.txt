@@ -1,0 +1,5 @@
+Running unit tests:
+With cmake (3.x), do:
+    cmake -Dtests=ON <relative_path_to_opsisd_directory>
+
+Tests require the presence of googetests, which should be placed in opsisd/tests/lib.
