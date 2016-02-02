@@ -146,7 +146,7 @@ class Source(object):
         # Adjust slower video sources
         if 'pipeline_name' is 'hdvpulse' or 'dvpulse':
             video_delay = 0 * 1000000000 # in ns, override env for testing
-            audio_delay = 0.4 * 1000000000  
+            audio_delay = 0.25 * 1000000000  
             print('Adjusting AV sync: [video: {}] [audio: {}]'.format(video_delay, audio_delay))
             if video_delay > 0:
                 self.videosrc = self.senderPipeline.get_by_name('videosrc')
