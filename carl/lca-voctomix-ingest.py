@@ -56,7 +56,7 @@ class Source(object):
            
         elif pipeline_name == 'hdvpulse':
             pipeline = """
-            hdv1394src name=videosrc !
+            hdv1394src do-timestamp=true name=videosrc !
 		tsdemux !
 		queue !
 		decodebin !
@@ -143,6 +143,13 @@ class Source(object):
         self.senderPipeline.use_clock(self.clock)
         self.src = self.senderPipeline.get_by_name('src')
 
+        # Adjust slower video sources
+        if 'pipeline_name' is 'hdvpulse' or 'dvpulse':
+            avsync_delay = 2 * 1000000000 # in ns, override env for testing
+            print('Adjusting AV sync by %s....' % avsync_delay)
+            self.videosrc = self.senderPipeline.get_by_name('videosrc')
+            self.videosrc.get_static_pad('src').set_offset(avsync_delay)
+
         # Binding End-of-Stream-Signal on Source-Pipeline
         self.senderPipeline.bus.add_signal_watch()
         self.senderPipeline.bus.connect("message::eos", self.on_eos)
@@ -169,6 +176,7 @@ def main():
     voc_core_hostname = os.environ.get('VOC_CORE', 'localhost')
     hdmi2usb_device = os.environ.get('HDMI2USB', '/dev/video0')
     pulse_device = os.environ.get('VOC_PULSE_DEV', 'alsa_input.usb-Burr-Brown_from_TI_USB_Audio_CODEC-00.analog-stereo')
+    avsync_delay = os.environ.get('AVSYNC_DELAY', '10')
 
     # get parameters (pipeline_name, vocto port ending digit in 1000x)
     try:
