@@ -5,6 +5,9 @@ YT_SERVER="rtmp://a.rtmp.youtube.com/live2"
 # Needs MIXER, which is the dvswitch mixer IP address
 PORT=2000
 
+# apt-add-repository ppa:timvideos/dvswitch
+# apt-get update
+# apt-get dist-upgrade
 # apt-get install --assume-yes gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-libav gstreamer1.0-tools gstreamer1.0-dvswitch
 
 
@@ -15,6 +18,7 @@ gst-launch-1.0 \
 	! dvdemux name=demux \
 	! queue \
 	! dvdec \
+	! deinterlace fields=top \
 	! videoconvert \
 	! videoscale ! video/x-raw,width=1280,height=720,pixel-aspect-ratio=\(fraction\)1/1 \
 	! x264enc bitrate=2000 byte-stream=false key-int-max=60 bframes=0 aud=true tune=zerolatency ! "video/x-h264,profile=main" \
