@@ -97,6 +97,11 @@ log_newName() {
     return datetime_fmt(buffer, sizeof(buffer)-1, logData.logpath) == -1 ? NULL : strdup(buffer);
 }
 
+const char *
+log_name() {
+    return logData.logfp && logData.flags & LOG_FILE ? logData.logname : NULL;
+}
+
 
 void
 log_rotate() {
@@ -107,14 +112,14 @@ log_rotate() {
     if (logData.flags & LOG_FILE) {
         logData.logname = log_newName();
         logData.logfp = fopen(logData.logname, "a+");
-        if (logData.logfp == NULL)      // emergency mode, just go into echo to stdout or stderr
+        // emergency mode, just go into echo to stdout or stderr
+        if (logData.logfp == NULL && !(logData.flags & LOG_NOECHO))
             logData.flags |= LOG_ECHO;
     }
 }
 
-
-void
-log_log(enum Verbosity verbosity, char const *fmt, ...) {
+static void
+log_log(enum Verbosity verbosity, char const *fmt, va_list args) {
     // first make sure we want to output something
 
     if (verbosity <= logData.verbosity) {
@@ -127,15 +132,15 @@ log_log(enum Verbosity verbosity, char const *fmt, ...) {
         }
         if (logData.logfp == NULL && logData.flags & LOG_FILE)
             log_rotate();
-        va_list args;
-        va_start(args, fmt);
         char fmtstr[strlen(logdate) + strlen(fmt) + 128];
         if (snprintf(fmtstr, sizeof(fmtstr), logData.logfmt, logdate, levels[verbosity], fmt) >= sizeof(fmtstr)) {
             fprintf(stderr, "FATAL: invalid log format '%s'\n", logData.logfmt);
             exit(2);
         }
         if (logData.logfp != NULL) {
-            vfprintf(logData.logfp, fmtstr, args);
+            va_list args_2 = {0};
+            va_copy(args_2, args);
+            vfprintf(logData.logfp, fmtstr, args_2);
             if (logData.flags & LOG_SYNC) {
                 fflush(logData.logfp);
                 fsync(fileno(logData.logfp));
@@ -149,10 +154,18 @@ log_log(enum Verbosity verbosity, char const *fmt, ...) {
 
 
 void
+log_message(enum Verbosity verbose, char const *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    log_log(verbose, fmt, args);
+    va_end(args);
+}
+
+void
 log_fatal(char const *fmt, ...) {
     va_list args;
     va_start(args, fmt);
-    log_log(V_FATAL, fmt, va_arg(args, char*));
+    log_log(V_FATAL, fmt, args);
     va_end(args);
 }
 
@@ -161,7 +174,7 @@ void
 log_critical(char const *fmt, ...)  {
     va_list args;
     va_start(args, fmt);
-    log_log(V_CRITICAL, fmt, va_arg(args, char*));
+    log_log(V_CRITICAL, fmt, args);
     va_end(args);
 }
 
@@ -170,7 +183,7 @@ void
 log_error(char const *fmt, ...)  {
     va_list args;
     va_start(args, fmt);
-    log_log(V_ERROR, fmt, va_arg(args, char*));
+    log_log(V_ERROR, fmt, args);
     va_end(args);
 }
 
@@ -179,7 +192,7 @@ void
 log_warning(char const *fmt, ...)  {
     va_list args;
     va_start(args, fmt);
-    log_log(V_WARN, fmt, va_arg(args, char*));
+    log_log(V_WARN, fmt, args);
     va_end(args);
 }
 
@@ -188,7 +201,7 @@ void
 log_info(char const *fmt, ...)  {
     va_list args;
     va_start(args, fmt);
-    log_log(V_INFO, fmt, va_arg(args, char*));
+    log_log(V_INFO, fmt, args);
     va_end(args);
 }
 
@@ -197,7 +210,7 @@ void
 log_debug(char const *fmt, ...)  {
     va_list args;
     va_start(args, fmt);
-    log_log(V_DEBUG, fmt, va_arg(args, char*));
+    log_log(V_DEBUG, fmt, args);
     va_end(args);
 }
 
@@ -206,6 +219,6 @@ void
 log_trace(char const *fmt, ...)  {
     va_list args;
     va_start(args, fmt);
-    log_log(V_TRACE, fmt, va_arg(args, char*));
+    log_log(V_TRACE, fmt, args);
     va_end(args);
 }
