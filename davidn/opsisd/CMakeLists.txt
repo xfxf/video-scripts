@@ -13,14 +13,17 @@ if (APPLE)
     add_definitions(-D__GLIBCXX__)
 endif (APPLE)
 
-include_directories(include)
+include_directories(LOCAL include)
 
 set(OPSISD_SOURCE_FILES
         src/opsisd.c include/opsisd.h
+        src/array.c include/array.h
+        src/buffer.c include/buffer.h
         src/serial.c include/serial.h
         src/network.c include/network.h
+        src/selector.c include/selector.h
         src/logging.c include/logging.h
-        src/device.c include/device.h)
+        src/iodev.c include/iodev.h)
 
 add_executable(opsisd src/main.c ${OPSISD_SOURCE_FILES})
 
@@ -48,5 +51,9 @@ if (tests)
     add_executable(runLoggingUnitTests ${OPSISD_SOURCE_FILES} tests/logging/test_basic_logging.cc)
     target_link_libraries(runLoggingUnitTests gtest gtest_main)
     add_test(opsis_logging runLoggingUnitTests)
+
+    add_executable(runArrayUnitTests ${OPSISD_SOURCE_FILES} tests/misc/test_array.cc)
+    target_link_libraries(runArrayUnitTests gtest gtest_main)
+    add_test(opsis_array runArrayUnitTests)
 
 endif()

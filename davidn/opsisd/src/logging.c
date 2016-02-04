@@ -2,12 +2,11 @@
 // Created by David Nugent on 2/02/2016.
 //
 
-#include <stdarg.h>
 #include <stdio.h>
-#include <time.h>
 #include <string.h>
-#include <sys/time.h>
 #include <stdlib.h>
+#include <time.h>
+#include <sys/time.h>
 #include <unistd.h>
 #include "logging.h"
 
@@ -33,6 +32,7 @@ static struct {
     0,
     0,
 };
+
 
 static char const *levels[] = {
     "NONE",             // 0 (use default)
@@ -118,8 +118,9 @@ log_rotate() {
     }
 }
 
-static void
+int
 log_log(enum Verbosity verbosity, char const *fmt, va_list args) {
+    int rc = 0;
     // first make sure we want to output something
 
     if (verbosity <= logData.verbosity) {
@@ -133,92 +134,105 @@ log_log(enum Verbosity verbosity, char const *fmt, va_list args) {
         if (logData.logfp == NULL && logData.flags & LOG_FILE)
             log_rotate();
         char fmtstr[strlen(logdate) + strlen(fmt) + 128];
-        if (snprintf(fmtstr, sizeof(fmtstr), logData.logfmt, logdate, levels[verbosity], fmt) >= sizeof(fmtstr)) {
+        snprintf(fmtstr, sizeof(fmtstr), logData.logfmt, logdate, levels[verbosity], fmt);
+        if (rc >= sizeof(fmtstr)) {
             fprintf(stderr, "FATAL: invalid log format '%s'\n", logData.logfmt);
             exit(2);
         }
         if (logData.logfp != NULL) {
             va_list args_2 = {0};
             va_copy(args_2, args);
-            vfprintf(logData.logfp, fmtstr, args_2);
+            rc = vfprintf(logData.logfp, fmtstr, args_2);
             if (logData.flags & LOG_SYNC) {
                 fflush(logData.logfp);
                 fsync(fileno(logData.logfp));
             }
         }
-        if (logData.flags & LOG_ECHO)
-            vfprintf(logData.flags & LOG_STDERR ? stderr : stdout, fmtstr, args);
+        if (logData.flags & LOG_ECHO) {
+            FILE *out = logData.flags & LOG_STDERR ? stderr : stdout;
+            rc = vfprintf(out, fmtstr, args);
+            fflush(out);
+        }
         va_end(args);
     }
+    return rc;
 }
 
 
-void
+int
 log_message(enum Verbosity verbose, char const *fmt, ...) {
     va_list args;
     va_start(args, fmt);
-    log_log(verbose, fmt, args);
+    int rc = log_log(verbose, fmt, args);
     va_end(args);
+    return rc;
 }
 
 void
-log_fatal(char const *fmt, ...) {
+log_fatal(int ec, char const *fmt, ...) {
     va_list args;
     va_start(args, fmt);
     log_log(V_FATAL, fmt, args);
     va_end(args);
+    exit(ec);
 }
 
 
-void
+int
 log_critical(char const *fmt, ...)  {
     va_list args;
     va_start(args, fmt);
-    log_log(V_CRITICAL, fmt, args);
+    int rc = log_log(V_CRITICAL, fmt, args);
     va_end(args);
+    return rc;
 }
 
 
-void
+int
 log_error(char const *fmt, ...)  {
     va_list args;
     va_start(args, fmt);
-    log_log(V_ERROR, fmt, args);
+    int rc = log_log(V_ERROR, fmt, args);
     va_end(args);
+    return rc;
 }
 
 
-void
+int
 log_warning(char const *fmt, ...)  {
     va_list args;
     va_start(args, fmt);
-    log_log(V_WARN, fmt, args);
+    int rc = log_log(V_WARN, fmt, args);
     va_end(args);
+    return rc;
 }
 
 
-void
+int
 log_info(char const *fmt, ...)  {
     va_list args;
     va_start(args, fmt);
-    log_log(V_INFO, fmt, args);
+    int rc = log_log(V_INFO, fmt, args);
     va_end(args);
+    return rc;
 }
 
 
-void
+int
 log_debug(char const *fmt, ...)  {
     va_list args;
     va_start(args, fmt);
-    log_log(V_DEBUG, fmt, args);
+    int rc = log_log(V_DEBUG, fmt, args);
     va_end(args);
+    return rc;
 }
 
 
-void
+int
 log_trace(char const *fmt, ...)  {
     va_list args;
     va_start(args, fmt);
-    log_log(V_TRACE, fmt, args);
+    int rc = log_log(V_TRACE, fmt, args);
     va_end(args);
+    return rc;
 }

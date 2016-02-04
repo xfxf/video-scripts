@@ -6,6 +6,7 @@
 #define OPSISD_LOGGING_H
 
 #include <stddef.h>
+#include <stdarg.h>
 
 enum Verbosity {
     V_NONE =0,
@@ -38,13 +39,15 @@ extern void log_rotate();               // close current log (if any), start a n
 extern char const *log_name();          // current log name (NULL if none)
 
 // Logging functions
-extern void log_message(enum Verbosity verbose, char const *fmt, ...) __attribute__((format (printf, 2, 3)));
-extern void log_fatal(char const *fmt, ...) __attribute__((format (printf, 1, 2)));
-extern void log_critical(char const *fmt, ...) __attribute__((format (printf, 1, 2)));
-extern void log_error(char const *fmt, ...) __attribute__((format (printf, 1, 2)));
-extern void log_warning(char const *fmt, ...) __attribute__((format (printf, 1, 2)));
-extern void log_info(char const *fmt, ...) __attribute__((format (printf, 1, 2)));
-extern void log_debug(char const *fmt, ...) __attribute__((format (printf, 1, 2)));
-extern void log_trace(char const *fmt, ...) __attribute__((format (printf, 1, 2)));
+int log_log(enum Verbosity verbosity, char const *fmt, va_list args);
+extern void log_fatal(int ec, char const *fmt, ...) __attribute__((format (printf, 2, 3))) __attribute__((noreturn));
+
+extern int log_critical(char const *fmt, ...) __attribute__((format (printf, 1, 2)));
+extern int log_error(char const *fmt, ...) __attribute__((format (printf, 1, 2)));
+extern int log_warning(char const *fmt, ...) __attribute__((format (printf, 1, 2)));
+extern int log_info(char const *fmt, ...) __attribute__((format (printf, 1, 2)));
+extern int log_debug(char const *fmt, ...) __attribute__((format (printf, 1, 2)));
+extern int log_trace(char const *fmt, ...) __attribute__((format (printf, 1, 2)));
+extern int log_message(enum Verbosity verbose, char const *fmt, ...) __attribute__((format (printf, 2, 3)));
 
 #endif //OPSISD_LOGGING_H

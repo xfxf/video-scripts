@@ -3,6 +3,8 @@
 //
 
 #include <termios.h>
+#include <stdlib.h>
+
 #include "serial.h"
 
 // Miscellaneous serial functions
@@ -15,7 +17,9 @@ static long baudmap[][2] = {
     {B9600,    9600     },
     {B19200,   19200    },
     {B38400,   38400    },
+#if defined(B57600)
     {B57600,   57600    },
+#endif
 #if defined(B115200)
     {B115200,  115200   },
 #endif
@@ -51,4 +55,27 @@ baud_to_speed(long baud) {
         if (baudmap[i][0] == baud)
             return baudmap[i][1];
     return BINVALID;
+}
+
+
+// serial_dev_t support
+
+serial_cfg_t *
+serial_getcfg(iodev_t *sdev) {
+    return (serial_cfg_t *)iodev_getcfg(sdev);
+}
+
+
+iodev_t *
+serial_create(char const *devname, long baudrate, size_t bufsize) {
+    // First create the basic (slightly larger) config
+    iodev_cfg_t *cfg = alloc_cfg(sizeof(serial_cfg_t), "serial", 0);
+    iodev_t *serial = iodev_create(cfg, bufsize);
+
+    // Initialise the extras
+    serial_cfg_t *scfg = serial_getcfg(serial);
+    scfg->portname = devname;
+    scfg->baudrate = baudrate;
+
+    return serial;
 }
