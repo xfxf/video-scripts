@@ -12,7 +12,7 @@ extern "C" {
 
 namespace {
 
-    static const char portlist[] = "ttyACM*|/dev/ttyVIZ*|/dev/tty*";
+    static const char portlist[] = "/dev/ttyVIZ*|ttyACM*|/dev/tty*";
     static const char host[] = "localhost";
 
     struct opsisd_opts opts = {

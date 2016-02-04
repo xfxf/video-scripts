@@ -28,7 +28,8 @@ namespace {
         const char *log_name2 = log_name();
         EXPECT_NE((const char *)0, log_name2);
         EXPECT_NE(log_name1, log_name2);
-        log_warning("Log name first = '%s', second = '%s'", log_name1, log_name2);
+        log_warning("Last log name: '%s'", log_name1);
+        log_warning("This log name: '%s'", log_name2);
         log_info("Ending test");
     };
 
@@ -38,6 +39,11 @@ namespace {
         for (int v = V_NONE; v++ < V_MAX; ) {
             log_message((enum Verbosity)v, "This is a log message at %s level", levelnames[v]);
         }
+    }
+
+    TEST(LoggingFunctions, logFatal) {
+        static char const *errorMessage = "Exiting with a fatal message";
+        ASSERT_EXIT(log_fatal(2, errorMessage, ""), ::testing::ExitedWithCode(2), errorMessage);
     }
 
 } // namespace

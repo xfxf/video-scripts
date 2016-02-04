@@ -44,16 +44,18 @@ if (tests)
     # unit tests
     ####
 
-    add_executable(runSerialUnitTests ${OPSISD_SOURCE_FILES} tests/serial/test_find_opsis_serial.cc)
+    add_executable(runSerialUnitTests ${OPSISD_SOURCE_FILES}
+            tests/serial/test_find_opsis_serial.cc)
     target_link_libraries(runSerialUnitTests gtest gtest_main)
     add_test(opsis_serial_interface runSerialUnitTests)
 
-    add_executable(runLoggingUnitTests ${OPSISD_SOURCE_FILES} tests/logging/test_basic_logging.cc)
-    target_link_libraries(runLoggingUnitTests gtest gtest_main)
-    add_test(opsis_logging runLoggingUnitTests)
+    add_executable(runMiscUnitTests ${OPSISD_SOURCE_FILES}
+            tests/misc/test_logging.cc
+            tests/misc/test_array.cc
+            tests/misc/test_buffer.cc)
 
-    add_executable(runArrayUnitTests ${OPSISD_SOURCE_FILES} tests/misc/test_array.cc)
-    target_link_libraries(runArrayUnitTests gtest gtest_main)
-    add_test(opsis_array runArrayUnitTests)
+    target_link_libraries(runMiscUnitTests gtest gtest_main)
+
+    add_test(misc_tests runMiscUnitTests)
 
 endif()

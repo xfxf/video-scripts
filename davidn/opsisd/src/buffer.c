@@ -38,8 +38,9 @@ buffer_free(buffer_t *buffer) {
 
 
 size_t buffer_size(buffer_t *buffer) { return buffer->b_size; }
-size_t buffer_inptr(buffer_t *buffer) { return buffer->b_hi; }
-size_t buffer_outptr(buffer_t *buffer) { return buffer->b_lo; }
+size_t buffer_hi(buffer_t *buffer) { return buffer->b_hi; }
+size_t buffer_lo(buffer_t *buffer) { return buffer->b_lo; }
+void * buffer_base(buffer_t *buffer) { return buffer->data; }
 
 
 void
@@ -58,7 +59,7 @@ buffer_used(buffer_t *buffer) {
 
 size_t
 buffer_available(buffer_t *buffer) {
-    return buffer->b_size - buffer_used(buffer) - 1;
+    return buffer->b_size ? buffer->b_size - buffer_used(buffer) - 1 : 0;
 }
 
 
@@ -104,7 +105,7 @@ buffer_compact(buffer_t *buffer) {
 size_t
 buffer_put(buffer_t *buffer, void const *buf, size_t len) {
     size_t avail = buffer_available(buffer);
-    if (len > avail)    // partial put only if insufficient space
+    if (len >= avail)    // partial put only if insufficient space
         len = avail;
     else
         avail = len;
@@ -121,7 +122,7 @@ buffer_put(buffer_t *buffer, void const *buf, size_t len) {
     }
     if (avail) {
         memcpy(buffer->data, buf, avail);
-        buffer->b_hi = buffer_inc(buffer, buffer->b_hi, top);
+        buffer->b_hi = buffer_inc(buffer, buffer->b_hi, avail);
     }
     return len;
 }

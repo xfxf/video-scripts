@@ -27,8 +27,9 @@ extern size_t buffer_used(buffer_t *buffer);
 extern void buffer_compact(buffer_t *buffer);
 
 size_t buffer_size(buffer_t *buffer);
-size_t buffer_inptr(buffer_t *buffer);
-size_t buffer_outptr(buffer_t *buffer);
+size_t buffer_hi(buffer_t *buffer);
+size_t buffer_lo(buffer_t *buffer);
+void * buffer_base(buffer_t *buffer);
 
 extern size_t buffer_put(buffer_t *buffer, void const *buf, size_t len);
 extern size_t buffer_get(buffer_t *buffer, void *buf, size_t len);
