@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """
+Ryan Verner <ryan.verner@gmail.com>
+Voctomix ingest streams used for LCA2016, hacked up on the fly.
+FIXME: This works, but it really needs rewriting.
+
 PIPELINES:
+ * dv
  * dvpulse
  * hdvpulse
  * hdmi2usb
@@ -30,6 +35,31 @@ class Source(object):
 
         voc_core_ip = socket.gethostbyname(voc_core_hostname)
         print(pipeline_name, voc_core_ip, voc_port)
+
+
+        if pipeline_name == 'dv': # untested, added for Carl 13-FEB-16
+            pipeline = """
+            dv1394src name=videosrc !
+        dvdemux name=dv
+        dv . !
+            dvdec !
+                tee name=t ! queue !
+                videoconvert ! fpsdisplaysink sync=false t. ! queue !
+            deinterlance mode=1 !
+            videoconvert !
+                videorate !
+                videoscale !
+                video/x-raw,format=I420,width=1280,height=720,framerate=30/1,pixel-aspect-ratio=1/1 !
+                queue !
+                mux.
+        dv. !
+            audioconvert !
+            audio/x-raw,format=S16LE,channels=2,layout=interleaved,rate=48000 !
+            queue !
+            mux.
+        matroskamux name=mux !
+            tcpclientsink port=1000%s host=%s
+            """ % (voc_port, voc_core_ip)
 
         if pipeline_name == 'dvpulse':
             pipeline = """
