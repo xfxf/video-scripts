@@ -16,6 +16,8 @@ screen -t vui bash -c  'while true; do ./vui.sh; sleep 1; done'
 # uncomment for Opsis and usb sound on mixer box 
 # screen -t cam bash -c   'while true; do ./hu-alsa.sh 0; sleep 1; done'
 
+screen -t cam bash -c   'while true; do ./lca-voctomix-ingest.py dv 0; sleep 1; done'
+
 screen -t save bash -c 'while true; do ./record-timestamp.sh; sleep 1; done'
 screen -t cut bash -c  'sleep 3; while true; do ./generate-cut-list.sh; sleep 1; done'
 

@@ -41,15 +41,15 @@ class Source(object):
             pipeline = """
             dv1394src name=videosrc !
         dvdemux name=dv
-        dv . !
+        dv. !
             dvdec !
                 tee name=t ! queue !
                 videoconvert ! fpsdisplaysink sync=false t. ! queue !
-            deinterlance mode=1 !
+		deinterlace mode=1 !
             videoconvert !
                 videorate !
                 videoscale !
-                video/x-raw,format=I420,width=1280,height=720,framerate=30/1,pixel-aspect-ratio=1/1 !
+                video/x-raw,format=I420,width=1280,height=720,framerate=30000/1001,pixel-aspect-ratio=1/1 !
                 queue !
                 mux.
         dv. !
@@ -61,7 +61,7 @@ class Source(object):
             tcpclientsink port=1000%s host=%s
             """ % (voc_port, voc_core_ip)
 
-        if pipeline_name == 'dvpulse':
+        elif pipeline_name == 'dvpulse':
             pipeline = """
             dv1394src name=videosrc !
 		dvdemux !
