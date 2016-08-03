@@ -34,14 +34,16 @@ def p(ser, dir, line):
 def getOutput(ser):
     failures = 0
     data = []
-    while ser.inWaiting() > 0 or failures < 5:
+    while failures < 5:
         try:
             failures = 0
             data.append(ser.read())
+            print(repr(data))
+            if len(data[-1]) == 0:
+                break
         except serial.serialutil.SerialException, e:
             failures += 1
             time.sleep(0.1)
-            break
     if data:
         for line in "".join(data).splitlines():
             p(ser, "-->", repr(line))
@@ -58,7 +60,7 @@ def write(ser, data):
     getOutput(ser)
 
 def initHDMI2USB():
-    ser = serial.Serial(port=SERIAL, baudrate=115200, timeout=0, xonxoff=False, rtscts=False, dsrdtr=False)
+    ser = serial.Serial(port=SERIAL, baudrate=115200, timeout=0.1)
 
     for i in range(1, 10):
         ser.flushInput()
