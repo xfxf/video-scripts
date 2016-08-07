@@ -1,0 +1,22 @@
+# don't display the copyright page
+startup_message off
+
+# increase scrollback buffer size
+defscrollback 10000
+
+# title of the session 
+sessionname tracker-scripts
+
+hardstatus alwayslastline
+hardstatus string '%{= kG}%-Lw%{= kW}%50> %n%f* %t%{= kG}%+Lw%< %{= kG}'
+
+screen -t core bash -c 'while true; do ./vcore.sh; sleep 1; done'
+screen -t vui bash -c  'while true; do ./vui.sh; sleep 1; done'
+
+# uncomment for Opsis and usb sound on mixer box 
+#screen -t cam bash -c   'while true; do ./hu-alsa.sh 0; sleep 1; done'
+#screen -t cam bash -c   'while true; do ./lca-voctomix-ingest.py dv 0; sleep 1; done'
+
+screen -t save bash -c 'while true; do ~/lca/voctomix-outcasts/record-mixed-av.sh $VIDEO_LOCATION; sleep 1; done'
+screen -t cut bash -c  'sleep 3; while true; do ./generate-cut-list.sh; sleep 1; done'
+
