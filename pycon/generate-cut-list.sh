@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-dir=$VIDEO_LOCATION/dv/$HOSTNAME/$(date +%Y-%m-%d)
+dir=$VIDEO_LOCATION/$HOSTNAME/$(date +%Y-%m-%d)
 mkdir -p $dir
 
 cd ~/lca/video-scripts/pycon
