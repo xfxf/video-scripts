@@ -17,6 +17,9 @@ screen -t vui bash -ic  'while true; do ./vui.sh; sleep 1; done'
 #screen -t cam bash -c   'while true; do ./hu-alsa.sh 0; sleep 1; done'
 #screen -t cam bash -c   'while true; do ./lca-voctomix-ingest.py dv 0; sleep 1; done'
 
-screen -t save bash -ic 'while true; do ~/lca/voctomix-outcasts/record-mixed-av.sh $VIDEO_LOCATION; sleep 1; done'
+vert_split
+screen -t save bash -ic 'while true; do ~/lca/voctomix-outcasts/record-timestamp.sh $VIDEO_LOCATION; sleep 1; done'
+split
+focus
 screen -t cut bash -ic  'sleep 3; while true; do ./generate-cut-list.sh; sleep 1; done'
 
