@@ -1,5 +1,5 @@
 #!/bin/sh
-gst-launch-1.0]
+gst-launch-1.0\
         v4l2src device=/dev/hdmi2usb/by-num/opsis0/video name=videosrc !\
                 queue!\
                 image/jpeg,width=1280,height=720 !\
