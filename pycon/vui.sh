@@ -1,0 +1,6 @@
+#!/bin/bash -ex
+
+cd ~/lca/voctomix/
+./voctogui/voctogui.py -vv 
+# -i ~/lca/video-scripts/carl/config.ini
+
