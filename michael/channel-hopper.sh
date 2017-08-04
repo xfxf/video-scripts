@@ -29,7 +29,7 @@ do
         ! queue \
         ! audioconvert \
         ! audioresample \
-        ! $AUDIO_SINK "buffer-size=${AUDIO_BUFFER}" &
+        ! $AUDIO_SINK "buffer-time=${AUDIO_BUFFER}" &
 
     # Hop channels after a few seconds
     GSTREAMER_PID=$!
