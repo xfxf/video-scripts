@@ -2,7 +2,10 @@
 # Channel Hopper
 MIXERS="10.20.0.10 10.20.0.20 10.20.0.30 10.20.0.40"
 
-AUDIO_SINK="autoaudiosink"
+# Needs gstreamer1.0-alsa package
+AUDIO_SINK="alsasink"
+# Reduces crackling audio problem
+AUDIO_BUFFER="50000" # microseconds
 
 # Best performance
 VIDEO_SINK="autovideosink"
@@ -26,7 +29,7 @@ do
         ! queue \
         ! audioconvert \
         ! audioresample \
-        ! $AUDIO_SINK &
+        ! $AUDIO_SINK "buffer-size=${AUDIO_BUFFER}" &
 
     # Hop channels after a few seconds
     GSTREAMER_PID=$!
