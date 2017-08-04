@@ -16,20 +16,21 @@ do
   do
     # Playback from that mixer.
     gst-launch-1.0 \
-	    tcpclientsrc "host=${MIXER}" port=15000 \
-	    ! matroskademux name=demux \
-	      ! queue \
-	      ! videoconvert \
-	      ! textoverlay text="${MIXER}" valignment=top halignment=left font-desc="Sans, 48" \
-	      ! $VIDEO_SINK \
-	    demux. \
-	      ! queue \
-	      ! audioconvert \
-	      ! $AUDIO_SINK &
+      tcpclientsrc "host=${MIXER}" port=15000 \
+      ! matroskademux name=demux \
+        ! queue \
+        ! videoconvert \
+        ! textoverlay text="${MIXER}" valignment=top halignment=left font-desc="Sans, 48" \
+        ! $VIDEO_SINK \
+      demux. \
+        ! queue \
+        ! audioconvert \
+        ! audioresample \
+        ! $AUDIO_SINK &
 
-	  # Hop channels after a few seconds
-	  GSTREAMER_PID=$!
-	  sleep 5s
-	  kill $GSTREAMER_PID
+    # Hop channels after a few seconds
+    GSTREAMER_PID=$!
+    sleep 10s
+    kill $GSTREAMER_PID
   done
 done
