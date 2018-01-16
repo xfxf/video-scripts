@@ -1,0 +1,95 @@
+# Grant permissions to Blackmagic Web Presenter (USB).
+
+SUBSYSTEM=="usb", ATTRS{idVendor}=="1edb", ATTRS{idProduct}=="bde5", \
+	ENV{ID_BMWEB}:="1", ENV{ID_BMWEB_BOARD}:="webpresenter"
+
+SUBSYSTEM=="video4linux", ATTRS{idVendor}=="1edb", ATTRS{idProduct}=="bde5", \
+	ENV{ID_BMWEB}:="1", ENV{ID_BMWEB_BOARD}:="webpresenter"
+
+ENV{ID_BMWEB}=="1", IMPORT{parent}="NUM_BMWEB*"
+
+# Number the devices
+# All BMWEB devices
+SUBSYSTEM=="usb", DRIVER=="usb", ENV{ID_BMWEB}=="1", ENV{ACTION}=="add", \
+	TEST!="/dev/bmweb/boards/all0", \
+	ENV{NUM_BMWEB}:="0"
+SUBSYSTEM=="usb", DRIVER=="usb", ENV{ID_BMWEB}=="1", ENV{ACTION}=="add", \
+	TEST=="/dev/bmweb/boards/all0", \
+	TEST!="/dev/bmweb/boards/all1", \
+	ENV{NUM_BMWEB}:="1"
+SUBSYSTEM=="usb", DRIVER=="usb", ENV{ID_BMWEB}=="1", ENV{ACTION}=="add", \
+	TEST=="/dev/bmweb/boards/all0", \
+	TEST=="/dev/bmweb/boards/all1", \
+	TEST!="/dev/bmweb/boards/all2", \
+	ENV{NUM_BMWEB}:="2"
+SUBSYSTEM=="usb", DRIVER=="usb", ENV{ID_BMWEB}=="1", ENV{ACTION}=="add", \
+	TEST=="/dev/bmweb/boards/all0", \
+	TEST=="/dev/bmweb/boards/all1", \
+	TEST=="/dev/bmweb/boards/all2", \
+	TEST!="/dev/bmweb/boards/all3", \
+	ENV{NUM_BMWEB}:="3"
+SUBSYSTEM=="usb", DRIVER=="usb", ENV{ID_BMWEB}=="1", ENV{ACTION}=="add", \
+	TEST=="/dev/bmweb/boards/all0", \
+	TEST=="/dev/bmweb/boards/all1", \
+	TEST=="/dev/bmweb/boards/all2", \
+	TEST=="/dev/bmweb/boards/all3", \
+	TEST!="/dev/bmweb/boards/all4", \
+	ENV{NUM_BMWEB}:="4"
+
+# BMWEB boards
+SUBSYSTEM=="usb", DRIVER=="usb", ENV{ID_BMWEB}=="1", ENV{ACTION}=="add", \
+	TEST!="/dev/bmweb/boards/$env{ID_BMWEB_BOARD}0", \
+	ENV{NUM_BMWEB_BOARD}:="0"
+SUBSYSTEM=="usb", DRIVER=="usb", ENV{ID_BMWEB}=="1", ENV{ACTION}=="add", \
+	TEST=="/dev/bmweb/boards/$env{ID_BMWEB_BOARD}0", \
+	TEST!="/dev/bmweb/boards/$env{ID_BMWEB_BOARD}1", \
+	ENV{NUM_BMWEB_BOARD}:="1"
+SUBSYSTEM=="usb", DRIVER=="usb", ENV{ID_BMWEB}=="1", ENV{ACTION}=="add", \
+	TEST=="/dev/bmweb/boards/$env{ID_BMWEB_BOARD}0", \
+	TEST=="/dev/bmweb/boards/$env{ID_BMWEB_BOARD}1", \
+	TEST!="/dev/bmweb/boards/$env{ID_BMWEB_BOARD}2", \
+	ENV{NUM_BMWEB_BOARD}:="2"
+SUBSYSTEM=="usb", DRIVER=="usb", ENV{ID_BMWEB}=="1", ENV{ACTION}=="add", \
+	TEST=="/dev/bmweb/boards/$env{ID_BMWEB_BOARD}0", \
+	TEST=="/dev/bmweb/boards/$env{ID_BMWEB_BOARD}1", \
+	TEST=="/dev/bmweb/boards/$env{ID_BMWEB_BOARD}2", \
+	TEST!="/dev/bmweb/boards/$env{ID_BMWEB_BOARD}3", \
+	ENV{NUM_BMWEB_BOARD}:="3"
+SUBSYSTEM=="usb", DRIVER=="usb", ENV{ID_BMWEB}=="1", ENV{ACTION}=="add", \
+	TEST=="/dev/bmweb/boards/$env{ID_BMWEB_BOARD}0", \
+	TEST=="/dev/bmweb/boards/$env{ID_BMWEB_BOARD}1", \
+	TEST=="/dev/bmweb/boards/$env{ID_BMWEB_BOARD}2", \
+	TEST=="/dev/bmweb/boards/$env{ID_BMWEB_BOARD}3", \
+	TEST!="/dev/bmweb/boards/$env{ID_BMWEB_BOARD}4", \
+	ENV{NUM_BMWEB_BOARD}:="4"
+
+# USB serial (unknown protocol)
+SUBSYSTEM=="usb", DRIVER=="usb", ENV{ID_BMWEB}=="1", \
+	SYMLINK+="bmweb/by-path/$env{ID_PATH}/usbdev", \
+	SYMLINK+="bmweb/by-num/all$env{NUM_BMWEB}/usbdev" \
+	SYMLINK+="bmweb/by-num/$env{ID_BMWEB_BOARD}$env{NUM_BMWEB_BOARD}/usbdev"
+
+# Video capture device
+SUBSYSTEM=="video4linux", ENV{ID_BMWEB}=="1", \
+	SYMLINK+="bmweb/by-path/$env{ID_PATH}/video", \
+	SYMLINK+="bmweb/by-num/all$env{NUM_BMWEB}/video", \
+	SYMLINK+="bmweb/by-num/$env{ID_BMWEB_BOARD}$env{NUM_BMWEB_BOARD}/video"
+
+# USB serial (unknown protocol)
+SUBSYSTEM=="usb", DRIVER=="usb", ENV{ID_BMWEB}=="1", \
+	MODE:="0660", GROUP:="video"
+
+# Video capture device
+SUBSYSTEM=="video4linux", ENV{ID_BMWEB}=="1", \
+	MODE:="0660", GROUP:="video"
+
+# Allow the user to unbind the kernel drivers attached to the device
+SUBSYSTEM=="usb", DRIVER=="usb", ENV{ID_BMWEB}=="1", \
+	TEST=="$sys$env{DEVPATH}/driver/unbind" \
+	RUN+="/bin/chmod 0660 $sys$env{DEVPATH}/driver/unbind" \
+	RUN+="/bin/chgrp video $sys$env{DEVPATH}/driver/unbind"
+
+SUBSYSTEM=="video4linux", ENV{ID_BMWEB}=="1", \
+	TEST=="$sys$env{DEVPATH}/../../driver/unbind" \
+	RUN+="/bin/chmod 0660 $sys$env{DEVPATH}/../../driver/unbind" \
+	RUN+="/bin/chgrp video $sys$env{DEVPATH}/../../driver/unbind"
