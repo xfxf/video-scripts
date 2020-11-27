@@ -1,0 +1,3 @@
+#!/bin/bash
+
+aws ec2 run-instances --image-id "ami-0f87b0a4eff45d9ce" --key-name "ec2-relays" --instance-type "t2.micro" --security-group-ids sg-02ca38382a32fd1eb --user-data file://ec2-pycon-install-relay.sh --associate-public-ip-address --tag-specifications "ResourceType=instance,Tags=[{Key=i-type,Value=ingest-relay},{Key=i-room,Value=$1},{Key=Name,Value='RTMP Relay $1'}]" --credit-specification CpuCredits=standard --subnet-id subnet-33af5c55 --iam-instance-profile "Name=NDV-EC2Role"
