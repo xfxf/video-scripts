@@ -34,6 +34,7 @@
 obs = obslua
 hotkey_id = obs.OBS_INVALID_HOTKEY_ID
 cutlist_fh = nil
+unloading = false
 
 -- Log event an event from this script.
 -- Both the `event_type` and `data` parameters must be strings.
@@ -59,7 +60,7 @@ function log_event(event_type, data)
    end
    event_data = event_data .. '}\n'
 
-   if event_type ~= 'CLOSE' then
+   if not unloading then
       -- OBS crashes if you call script_log() during script_unload()!
       obs.script_log(obs.LOG_INFO, 'event: ' .. event_data)
    end
@@ -67,7 +68,7 @@ function log_event(event_type, data)
    if cutlist_fh ~= nil then
       cutlist_fh:write(event_data)
       cutlist_fh:flush()
-   elseif event_type ~= 'CLOSE' then
+   elseif not unloading then
       -- OBS crashes if you call script_log() during script_unload()!
       obs.script_log(obs.LOG_ERROR, 'Cut list file not open, cannot log!')
    end
@@ -81,9 +82,10 @@ function log_scene()
 end
 
 function close_log()
-   log_event('CLOSE')
    if cutlist_fh ~= nil then
       -- Close existing file
+      log_event('CLOSE')
+
       cutlist_fh:close()
       cutlist_fh = nil
    end
@@ -157,5 +159,6 @@ function script_description()
 end
 
 function script_unload()
+   unloading = true
    close_log()
 end
