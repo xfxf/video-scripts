@@ -106,10 +106,10 @@ end
 
 -- Properties
 function script_properties()
-	local props = obs.obs_properties_create()
-	obs.obs_properties_add_path(props, 'cutlist.path', 'Output file', obs.OBS_PATH_FILE_SAVE, 'Text file (*.txt);', nil)
+   local props = obs.obs_properties_create()
+   obs.obs_properties_add_path(props, 'cutlist.path', 'Output file', obs.OBS_PATH_FILE_SAVE, 'Text file (*.txt);', nil)
    obs.obs_properties_add_button(props, 'cutlist.button', 'Log cut event', cut) 
-	return props
+   return props
 end
 
 -- Setup
