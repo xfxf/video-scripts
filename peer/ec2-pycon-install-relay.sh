@@ -20,6 +20,7 @@
 NGINX_VERSION="1.19.1" # Currently only tested with 1.19.1, but anything 1.13+ should work
 ZONE_ID="Z09102521YXWQT2ZKMPP7"
 DOMAIN_NAME="aws.nextdayvideo.com.au"
+REGION = "us-east-2"
 
 apt -y update
 DEBIAN_FRONTEND=noninteractive apt -y full-upgrade # apt is silly
@@ -30,14 +31,14 @@ cd /root
 mkdir .aws
 cat <<tac > .aws/config
 [default]
-region = ap-southeast-2
+region = us-east-2
 tac
 INSTANCE_ID=`curl -s http://instance-data/latest/meta-data/instance-id`
-aws ec2 describe-tags --region ap-southeast-2 --filters "Name=resource-id,Values=$INSTANCE_ID" > instance-tags.json
+aws ec2 describe-tags --region us-east-2 --filters "Name=resource-id,Values=$INSTANCE_ID" > instance-tags.json
 INSTANCE_TYPE=`jq -r '.Tags[]| select(.Key == "i-type")|.Value' instance-tags.json`
 ROOM_NUMBER=`jq -r '.Tags[]| select(.Key == "i-room")|.Value' instance-tags.json`
 PUB_HOSTNAME=`curl -s http://instance-data/latest/meta-data/public-hostname`
-VIDEO_VOLID=`aws ec2 describe-volumes | jq -r ".Volumes[]|select(.AvailabilityZone==\"ap-southeast-2b\")|select(.Tags)|select(.Tags[].Value==\"ingest-store\")|select(.Tags[].Value==\"$ROOM_NUMBER\").VolumeId"`
+VIDEO_VOLID=`aws ec2 describe-volumes | jq -r ".Volumes[]|select(.AvailabilityZone==\"us-east-2b\")|select(.Tags)|select(.Tags[].Value==\"ingest-store\")|select(.Tags[].Value==\"$ROOM_NUMBER\").VolumeId"`
 
 echo "$INSTANCE_ID"
 echo "$INSTANCE_TYPE"
