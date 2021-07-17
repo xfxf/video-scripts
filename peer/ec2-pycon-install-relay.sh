@@ -50,11 +50,10 @@ mkdir /root/src
 cd /root/src
 
 echo "Getting src.."
-wget "http://nginx.org/download/nginx-$NGINX_VERSION.tar.gz"
-git clone https://github.com/sergey-dryabzhinsky/nginx-rtmp-module.git
+wget -O "nginx-$NGINX_VERSION.tar.gz" "https://nginx.org/download/nginx-$NGINX_VERSION.tar.gz"
+git clone -b stable https://github.com/micolous/nginx-rtmp-module.git
 
 tar xf "nginx-$NGINX_VERSION.tar.gz"
-rm "nginx-$NGINX_VERSION.tar.gz"
 cd "nginx-$NGINX_VERSION/"
 ./configure --add-module=../nginx-rtmp-module --prefix=/opt/nginx --without-http_charset_module --without-http_gzip_module --without-http_ssi_module --without-http_userid_module --without-http_access_module --without-http_auth_basic_module --without-http_mirror_module --without-http_autoindex_module --without-http_geo_module --without-http_map_module --without-http_split_clients_module --without-http_referer_module --without-http_rewrite_module --without-http_proxy_module --without-http_fastcgi_module --without-http_uwsgi_module --without-http_scgi_module --without-http_grpc_module --without-http_memcached_module --without-http_limit_conn_module --without-http_limit_req_module --without-http_empty_gif_module --without-http_browser_module --without-http_upstream_hash_module --without-http_upstream_ip_hash_module --without-http_upstream_least_conn_module --without-http_upstream_random_module --without-http_upstream_keepalive_module --without-http_upstream_zone_module --without-http-cache --without-pcre
 
@@ -62,7 +61,6 @@ make
 make install
 
 cd /opt/nginx/conf
-rm -rfv *
 cp "/root/src/nginx-$NGINX_VERSION/conf/mime.types" .
 cat <<tac > nginx.conf
 worker_processes  1;
@@ -95,7 +93,7 @@ rtmp {
 		application room-push {
 tac
 
-#curl -s http://www.gstatic.com/ipranges/cloud.json | jq -r '.prefixes|.[]|select(.scope == "us-central1")|"\t\t\tallow publish " + .ipv4Prefix + ";"' >> nginx.conf
+#curl -s https://www.gstatic.com/ipranges/cloud.json | jq -r '.prefixes|.[]|select(.scope == "us-central1")|"\t\t\tallow publish " + .ipv4Prefix + ";"' >> nginx.conf
 
 cat <<tac >> nginx.conf
 			allow publish all;
@@ -133,8 +131,7 @@ aws ec2 attach-volume --volume-id $VIDEO_VOLID --instance-id $INSTANCE_ID --devi
 
 echo "/dev/xvdf /video ext4 defaults 0 0" | tee -a /etc/fstab
 
-cd /opt/nginx
-sbin/nginx -t
+/opt/nginx/sbin/nginx -t || exit 1
 
 curl -X POST -H 'Content-type: application/json' --data "{'text':'New Instance \`$INSTANCE_ID\` of type \`$INSTANCE_TYPE\` spun up, \`rtmp://rtmp-$INSTANCE_TYPE-r$ROOM_NUMBER.$DOMAIN_NAME/room-push/room$ROOM_NUMBER\`'}" https://hooks.slack.com/services/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
 
