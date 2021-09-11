@@ -51,7 +51,10 @@ cd /root/src
 
 echo "Getting src.."
 wget -O "nginx-$NGINX_VERSION.tar.gz" "https://nginx.org/download/nginx-$NGINX_VERSION.tar.gz"
-git clone -b dev https://github.com/nextdayvideo/nginx-rtmp-module.git
+
+# stable = branch suitable for deployment
+# dev = development branch, DO NOT DEPLOY TO PROD
+git clone -b stable https://github.com/nextdayvideo/nginx-rtmp-module.git
 
 tar xf "nginx-$NGINX_VERSION.tar.gz"
 cd "nginx-$NGINX_VERSION/"
