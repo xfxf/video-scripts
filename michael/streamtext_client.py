@@ -43,7 +43,7 @@ limitations under the License.
 from dataclasses import dataclass, field
 import requests
 from time import sleep
-from typing import Iterator, Optional
+from typing import Iterator, List, Optional
 from urllib.parse import unquote
 
 _TEXT_DATA_URL = 'https://www.streamtext.net/text-data.ashx'
@@ -69,9 +69,10 @@ class TextData:
 
 @dataclass
 class TextDataResponse:
+    """A single response from a StreamText.net live stream."""
     first_position: int
     last_position: int
-    events: list[TextData] = field(default_factory=list)
+    events: List[TextData] = field(default_factory=list)
 
     @staticmethod
     def from_json(j, first_position: int) -> 'TextDataResponse':
@@ -98,25 +99,28 @@ class StreamTextClient:
         Returns:
             A single TextDataResponse, or None if no event is available.
         """
-        r = self._session.get(_TEXT_DATA_URL, params=dict(
-            event=event,
-            last=str(last),
-        ))
+        r = self._session.get(_TEXT_DATA_URL,
+                              params={
+                                  'event': event,
+                                  'last': str(last),
+                              })
 
         if r.status_code == 200:
             return TextDataResponse.from_json(r.json(), last)
-        
+
         if r.status_code == 404:
             # Stream offline, reset position
             return TextDataResponse(first_position=last, last_position=-1)
-        
+
         if r.status_code in (502, 503, 504):
             # Server issue
             return
 
         raise Exception(f'Unexpected HTTP {r.status_code}: {r.url}')
-    
-    def stream(self, event: str, last: int = -1) -> Iterator[Optional[TextDataResponse]]:
+
+    def stream(self,
+               event: str,
+               last: int = -1) -> Iterator[Optional[TextDataResponse]]:
         """Streams events from StreamText as a generator."""
         while True:
             r = self._get(event, last)
@@ -129,7 +133,7 @@ class StreamTextClient:
             else:
                 # Stream online, record last event ID.
                 last = r.last_position
-            
+
             yield r
 
 
@@ -142,23 +146,34 @@ def main():
     from argparse import ArgumentParser
     import sys
 
-    parser = ArgumentParser()
-    parser.add_argument('event', nargs=1)
-    parser.add_argument('--last', default=-1, type=int)
+    parser = ArgumentParser(
+        prog='streamtext_client',
+        description='Show a live feed from StreamText.net.',
+    )
+    parser.add_argument('event',
+                        nargs=1,
+                        help='StreamText.net event ID to stream.')
+    parser.add_argument(
+        '--last',
+        default=-1,
+        type=int,
+        help=('First event ID to read from. When -1 (the default), '
+              'automatically catch up to live.'),
+    )
     options = parser.parse_args()
 
     client = StreamTextClient()
     stream = client.stream(options.event[0], options.last)
-
+    print(f'Streaming {options.event[0]} from {options.last}...')
     for msg in stream:
         for e in msg.events:
             if e.basic:
                 sys.stdout.write(_handle_bs(e.basic))
 
         sys.stdout.flush()
-        
-        # sleep a bit
         sleep(1)
+
+    print('Stream ended.')
 
 
 if __name__ == '__main__':
