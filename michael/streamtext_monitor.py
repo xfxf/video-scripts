@@ -23,7 +23,6 @@ from prometheus_client import start_http_server, Gauge
 from streamtext_client import StreamTextClient
 
 
-_BUFFER_SIZE = 256
 _CLIENT = StreamTextClient()
 _LAST_RESET = Gauge(
     'streamtext_last_reset_ts',
@@ -49,7 +48,6 @@ class StreamMonitor:
         self.reset()
 
     def reset(self):
-        self.buffer = ''
         self._stream = _CLIENT.stream(self._event)
         _LAST_RESET.labels(self._event).set_to_current_time()
 
@@ -67,21 +65,6 @@ class StreamMonitor:
             self._last_msg = r
             _LAST_SEEN.labels(self._event).set_to_current_time()
             _LAST_POSITION.labels(self._event).set(self._last_msg.last_position)
-
-            for e in r.events:
-                if not e.basic:
-                    # TODO: handle other events
-                    continue
-
-                for char in e.basic:
-                    if char == '\x08':
-                        # Backspace
-                        self.buffer = self.buffer[:-1]
-                    else:
-                        self.buffer += char
-                
-                # Memory limit
-                self.buffer = self.buffer[-_BUFFER_SIZE:]
 
             if r.events:
                 _LAST_TEXT.labels(self._event).set_to_current_time()
