@@ -1,152 +1,119 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
+"""
+streamtext_monitor.py - Export StreamText.Net metrics.
+Copyright 2021 Michael Farrell <micolous+git@gmail.com>
 
-# First:
-# https://www.streamtext.net/text-data.ashx?event=EEEE&last=-1
-#
-# this gives:
-#  HTTP 200 -> { lastPosition: 1208, i: [] }
-# on error:
-#  HTTP 404 -> then we try again
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-# then we do:
-# https://www.streamtext.net/text-data.ashx?event=EEEE&last=1208
-#
-# this gives:
-#  {"lastPosition":1210, "i":[{"format":"basic","d":"%20move"},{"format":"basic","d":"%20on%20from"}]}
+    http://www.apache.org/licenses/LICENSE-2.0
 
-# next we grab last=1210
-#
-# when no new data:
-#   HTTP 200 => {"lastPosition":1210, "i":[]}
-#   repeat request
-# then on success:
-#   HTTP 200 => {"lastPosition":1211, "i":[{"format":"basic","d":"%20"}]}
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
 
-# last = 0
-#   grabs everything!
-
+import asyncio
 from argparse import ArgumentParser
-from dataclasses import dataclass, field
-from datetime import datetime
-import requests
-import sys
-from time import sleep
-from typing import Iterator, Optional
-from urllib.parse import unquote
+from datetime import datetime, timezone
+import json
+from time import sleep, time
+from typing import Optional
 
-_TEXT_DATA_URL = 'https://www.streamtext.net/text-data.ashx'
+from streamtext_client import StreamTextClient, TextDataResponse
 
 
-def _log(line: str):
-    now = datetime.utcnow()
-    print(f'{now.isoformat()}: {line}')
+_CLIENT = StreamTextClient()
 
 
-@dataclass
-class TextData:
-    basic: Optional[str] = None
-    other: Optional[dict] = None
-
-    @staticmethod
-    def from_json(j) -> 'TextData':
-        fmt = j.get('format')
-        if fmt == 'basic':
-            d = unquote(str(j.get('d', '')))
-            return TextData(basic=d)
-        else:
-            return TextData(other=j)
+def _now() -> datetime:
+    return datetime.utcnow().replace(tzinfo=timezone.utc)
 
 
-@dataclass
-class TextDataResponse:
-    first_position: int
-    last_position: int
-    events: list[TextData] = field(default_factory=list)
+class StreamMonitor:
+    def __init__(self, event: str):
+        self._event = event
+        self.run = True
+        self.last_seen = None  # type: Optional[datetime]
+        self._last_msg = None  # type: Optional[TextDataResponse]
+        self.reset()
 
-    @staticmethod
-    def from_json(j, first_position: int) -> 'TextDataResponse':
+    def reset(self):
+        self.buffer = ''
+        self._stream = _CLIENT.stream(self._event)
+        self.last_reset = _now()  # type: datetime
+
+    @property
+    def last_position(self) -> int:
+        return self._last_msg.last_position if self._last_msg else -1
+
+    async def loop(self):
+        # Poll a response from the stream
         try:
-            last_position = int(j.get('lastPosition', 0))
-        except:
-            last_position = -1
+            r = next(self._stream)
+        except StopIteration:
+            self.reset()
+            # Wait a little longer...
+            await asyncio.sleep(5)
+            return asyncio.create_task(self.loop())
 
-        return TextDataResponse(
-            first_position=first_position,
-            last_position=last_position,
-            events=[TextData.from_json(j) for j in j.get('i', [])],
-        )
+        if r:
+            self._last_msg = r
+            self.last_seen = _now()
 
+            for e in r.events:
+                if not e.basic:
+                    # TODO: handle other events
+                    continue
 
-class StreamTextClient:
-    def __init__(self):
-        self._session = requests.Session()
+                for char in e.basic:
+                    if char == '\x08':
+                        # Backspace
+                        self.buffer = self.buffer[:-1]
+                    else:
+                        self.buffer += char
+                
+                # Memory limit, take the last 512 bytes
+                self.buffer = self.buffer[-512:]
 
-    def _get(self, event: str, last: int) -> Optional[TextDataResponse]:
-        """
-        Gets a single event from the StreamText service.
+        await asyncio.sleep(1)
+        return asyncio.create_task(self.loop())
 
-        Returns:
-            A single TextDataResponse, or None if no event is available.
-        """
-        r = self._session.get(_TEXT_DATA_URL, params=dict(
-            event=event,
-            last=str(last),
+    def dump_state(self):
+        return json.dumps(dict(
+            event=self._event,
+            now=_now().isoformat(),
+            last_reset=self.last_reset.isoformat() if self.last_reset else None,
+            last_seen=self.last_seen.isoformat() if self.last_seen else None,
+            last_position=self.last_position,
+            buffer=self.buffer,
         ))
 
-        if r.status_code == 200:
-            return TextDataResponse.from_json(r.json(), last)
-        
-        if r.status_code == 404:
-            # Stream offline, reset position
-            return TextDataResponse(first_position=last, last_position=-1)
-        
-        if r.status_code in (502, 503, 504):
-            # Server issue
-            return
+async def main_async(events: list[str]):
+    # Create all the monitors
 
-        raise Exception(f'Unexpected HTTP {r.status_code}: {r.url}')
+    monitors = []
+    for e in events:
+        m = StreamMonitor(e)
+        monitors.append(m)
+        asyncio.create_task(m.loop())
     
-    def stream(self, event: str, last: int = -1) -> Iterator[Optional[TextDataResponse]]:
-        while True:
-            r = self._get(event, last)
-            if r is None:
-                # Server issue, give empty response
-                yield
-            elif r.last_position == -1:
-                # Stream offline, end the stream.
-                return
-            else:
-                # Stream online, record last event ID.
-                last = r.last_position
-            
-            yield r
-
-def _handle_bs(d: str) -> str:
-    return d.replace('\x08', '\x08 \x08')
+    while True:
+        for m in monitors:
+            print(m.dump_state())
+        await asyncio.sleep(1)
 
 
 def main():
     parser = ArgumentParser()
-    parser.add_argument('event', nargs=1)
-    parser.add_argument('--last', default=-1, type=int)
+    parser.add_argument('events', nargs='+')
+
     options = parser.parse_args()
 
-    client = StreamTextClient()
-    stream = client.stream(options.event[0], options.last)
-
-    for msg in stream:
-        #_log(f'Events from {msg.first_position} to {msg.last_position}: {repr(msg)}')
-        for e in msg.events:
-            if e.basic:
-                #_log(e)
-                sys.stdout.write(_handle_bs(e.basic))
-
-        sys.stdout.flush()
-        
-        # sleep a bit
-        sleep(1)
-    
-    _log('Stream offline')
+    asyncio.run(main_async(options.events))
 
 
 if __name__ == '__main__':
