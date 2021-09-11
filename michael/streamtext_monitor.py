@@ -18,37 +18,40 @@ limitations under the License.
 
 import asyncio
 from argparse import ArgumentParser
-from datetime import datetime, timezone
-import json
-from time import sleep, time
-from typing import Optional
+from prometheus_client import start_http_server, Gauge
 
-from streamtext_client import StreamTextClient, TextDataResponse
+from streamtext_client import StreamTextClient
 
 
+_BUFFER_SIZE = 256
 _CLIENT = StreamTextClient()
-
-
-def _now() -> datetime:
-    return datetime.utcnow().replace(tzinfo=timezone.utc)
+_LAST_RESET = Gauge(
+    'streamtext_last_reset_ts',
+    'Time of last stream reset',
+    ['event'])
+_LAST_TEXT = Gauge(
+    'streamtext_last_text_ts',
+    'Time of last text track',
+    ['event'])
+_LAST_SEEN = Gauge(
+    'streamtext_last_seen_ts',
+    'Time of last API response',
+    ['event'])
+_LAST_POSITION = Gauge(
+    'streamtext_last_position',
+    'Last message ID from API',
+    ['event'])
 
 
 class StreamMonitor:
     def __init__(self, event: str):
         self._event = event
-        self.run = True
-        self.last_seen = None  # type: Optional[datetime]
-        self._last_msg = None  # type: Optional[TextDataResponse]
         self.reset()
 
     def reset(self):
         self.buffer = ''
         self._stream = _CLIENT.stream(self._event)
-        self.last_reset = _now()  # type: datetime
-
-    @property
-    def last_position(self) -> int:
-        return self._last_msg.last_position if self._last_msg else -1
+        _LAST_RESET.labels(self._event).set_to_current_time()
 
     async def loop(self):
         # Poll a response from the stream
@@ -62,7 +65,8 @@ class StreamMonitor:
 
         if r:
             self._last_msg = r
-            self.last_seen = _now()
+            _LAST_SEEN.labels(self._event).set_to_current_time()
+            _LAST_POSITION.labels(self._event).set(self._last_msg.last_position)
 
             for e in r.events:
                 if not e.basic:
@@ -76,43 +80,38 @@ class StreamMonitor:
                     else:
                         self.buffer += char
                 
-                # Memory limit, take the last 512 bytes
-                self.buffer = self.buffer[-512:]
+                # Memory limit
+                self.buffer = self.buffer[-_BUFFER_SIZE:]
+
+            if r.events:
+                _LAST_TEXT.labels(self._event).set_to_current_time()
+
 
         await asyncio.sleep(1)
         return asyncio.create_task(self.loop())
 
-    def dump_state(self):
-        return json.dumps(dict(
-            event=self._event,
-            now=_now().isoformat(),
-            last_reset=self.last_reset.isoformat() if self.last_reset else None,
-            last_seen=self.last_seen.isoformat() if self.last_seen else None,
-            last_position=self.last_position,
-            buffer=self.buffer,
-        ))
 
 async def main_async(events: list[str]):
     # Create all the monitors
+    monitors = []  # type: list[StreamMonitor]
 
-    monitors = []
     for e in events:
         m = StreamMonitor(e)
         monitors.append(m)
         asyncio.create_task(m.loop())
     
     while True:
-        for m in monitors:
-            print(m.dump_state())
         await asyncio.sleep(1)
 
 
 def main():
     parser = ArgumentParser()
     parser.add_argument('events', nargs='+')
+    parser.add_argument('--port', type=int, default=8000)
 
     options = parser.parse_args()
 
+    start_http_server(options.port)
     asyncio.run(main_async(options.events))
 
 
