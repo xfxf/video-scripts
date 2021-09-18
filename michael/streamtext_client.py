@@ -92,7 +92,8 @@ class StreamTextClient:
     def __init__(self):
         self._session = requests.Session()
 
-    def _get(self, event: str, last: int) -> Optional[TextDataResponse]:
+    def _get(self, event: str, last: int,
+             language: Optional[str]) -> Optional[TextDataResponse]:
         """
         Gets a single event from the StreamText service.
 
@@ -103,6 +104,7 @@ class StreamTextClient:
                               params={
                                   'event': event,
                                   'last': str(last),
+                                  'language': language,
                               })
 
         if r.status_code == 200:
@@ -118,12 +120,33 @@ class StreamTextClient:
 
         raise Exception(f'Unexpected HTTP {r.status_code}: {r.url}')
 
-    def stream(self,
-               event: str,
-               last: int = -1) -> Iterator[Optional[TextDataResponse]]:
-        """Streams events from StreamText as a generator."""
+    def stream(
+        self,
+        event: str,
+        last: int = -1,
+        language: Optional[str] = None,
+    ) -> Iterator[Optional[TextDataResponse]]:
+        """
+        Streams events from StreamText as an iterator.
+
+        The stream continues until the event ends.
+        
+        Args:
+            event: StreamText.net event identifier.
+            last: Position to start from. Defaults to -1 (jump to real-time).
+            language: Language code to stream text in. Required only for
+                multi-lingual streams.
+        
+        Yields:
+            TextDataResponse of the server's response.
+            In the event of server errors, this yields None, and the stream
+            may be resumed.
+        
+        Returns:
+            None at the end of the stream.
+        """
         while True:
-            r = self._get(event, last)
+            r = self._get(event, last, language)
             if r is None:
                 # Server issue, give empty response
                 yield
@@ -147,8 +170,9 @@ def main():
     import sys
 
     parser = ArgumentParser(
-        prog='streamtext_client',
         description='Show a live feed from StreamText.net.',
+        epilog=("StreamText's demo stream can be viewed with: "
+                '%(prog)s IHaveADream -l en'),
     )
     parser.add_argument('event',
                         nargs=1,
@@ -160,11 +184,19 @@ def main():
         help=('First event ID to read from. When -1 (the default), '
               'automatically catch up to live.'),
     )
+    parser.add_argument(
+        '-l',
+        '--language',
+        help=('Subtitle language code to stream. Required for multi-lingual '
+              'streams.'),
+    )
     options = parser.parse_args()
 
     client = StreamTextClient()
-    stream = client.stream(options.event[0], options.last)
-    print(f'Streaming {options.event[0]} from {options.last}...')
+    stream = client.stream(options.event[0], options.last, options.language)
+    print(f'Streaming {options.event[0]} from {options.last} in '
+          f'{options.language or "unknown language"}...')
+
     for msg in stream:
         for e in msg.events:
             if e.basic:
@@ -177,4 +209,7 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        pass
