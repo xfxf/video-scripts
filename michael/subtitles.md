@@ -261,7 +261,7 @@ Can also debug a file with:
 
 This sends caption debug data to `stderr`, and an SRT version to `stdout`.
 
-TODO: figure out what rate we can send captions, and maybe use scrolling as well. This may sort out YouTube issues with this (unwrapped source file):
+TODO: figure out what rate we can send captions, and maybe use scrolling as well. This may sort out YouTube and VLC issues with this (unwrapped source file):
 
 ```
    timestamp: 0.033000
