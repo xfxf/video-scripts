@@ -36,8 +36,8 @@ Investigated adding support for subtitle pass-through for OBS VLC source:
 API call via OBS-WebSockets:
 
 * only supports complete caption updates, no backspace support
-* [obs-websockets-streamtext-captions](https://github.com/EddieCameron/obs-websocket-streamtext-captions): provides bridge from Streamtext.net into WebSockets-OBS, but only supports complete subs, no backspace
 * currently going through major rewrite, not accepting patches on 4.x, master branch (5.x) is incomplete
+* [obs-websockets-streamtext-captions](https://github.com/EddieCameron/obs-websocket-streamtext-captions): provides bridge from Streamtext.net into WebSockets-OBS, but only supports complete subs, no backspace
 
 Decklink SDI:
 
