@@ -12,7 +12,42 @@
 
   Describes CEA-608 caption format.
 
-## encode and stream loops
+## Streamtext.net
+
+* `streamtext_client.py`: reverse engineered client for StreamText, pulls the live feed and displays on CLI
+* `streamtext_monitor.py`: uses our StreamText client library to export metrics for Prometheus, so we can see if we're still getting data
+
+## OBS
+
+OBS supports CEA-708 output, but only in three ways:
+
+* In-built speech-to-text recognizer
+* API call which injects subtitles
+* Decklink SDI capture passthrough
+
+Investigated adding support for subtitle pass-through for OBS VLC source:
+
+* vlc-source uses [libvlc memory buffer API to get a decoded video and audio stream](https://code.videolan.org/videolan/vlc/-/blob/master/modules/stream_out/smem.c)
+* libvlc doesn't appear to give any special access to the subtitle track
+* we can only burn-in subtitles on to the video stream
+* may be a way to use `#sout` to get a copy of the caption feed, haven't figured this out yet.
+* there is a memfile interface, [but it appears to be read-only](https://videolan.videolan.me/vlc/group__libvlc__media.html#gabeece3802e4b17a655e45c4ff4a2bbda).
+
+API call via OBS-WebSockets:
+
+* only supports complete caption updates, no backspace support
+* [obs-websockets-streamtext-captions](https://github.com/EddieCameron/obs-websocket-streamtext-captions): provides bridge from Streamtext.net into WebSockets-OBS, but only supports complete subs, no backspace
+* currently going through major rewrite, not accepting patches on 4.x, master branch (5.x) is incomplete
+
+Decklink SDI:
+
+* requires SDI source with CEA-708 CC feed
+* decklink-captions patch added support for CEA-708 sources, shows how it works inside of OBS: https://github.com/obsproject/obs-studio/pull/2857/files
+* unclear how "mixing" multiple CEA-708 sources works
+
+## ffmpeg
+
+### encode and stream loops
 
 Encode video as h264 baseline in FLV container, preserving CEA608/708 captions (if present):
 
@@ -46,7 +81,7 @@ ffmpeg -stream_loop -1 -re -i input.flv \
 * `-c copy`: don't transcode
 * `-f flv`: output as flv container
 
-## ffprobe outputs
+### ffprobe outputs
 
 FLV with H.264 video and embedded CEA-608 captions:
 
