@@ -230,3 +230,62 @@ Asset (recorded live stream) is also missing captions:
     Metadata:
       variant_bitrate : 697078
 ```
+
+### muxing our own CEA-608 caption track
+
+TODO: Need some bug fixes in libcaption:
+
+* https://github.com/szatmary/libcaption/pull/49
+* party.c "party dudes" don't work on YouTube
+
+CEA-608 frame is 32 columns x 15 rows. Need to adjust the line wrapping on subs - Subtitle Edit can do this (break/split long lines). Also tried using `fold`, but this **didn't** work well due to long cues:
+
+```sh
+# bad!
+fold -sw 32 source.srt > output.srt
+```
+
+Muxing the file:
+
+```sh
+./libcaption/examples/flv+srt input.flv input.srt output.flv
+```
+
+This will spew a lot of debug output, but should show every caption it found.  File should be playable in VLC, after enabling CC Track 1.
+
+Can also debug a file with:
+
+```sh
+./libcaption/examples/flv2srt input.flv 2>&1 | less
+```
+
+This sends caption debug data to `stderr`, and an SRT version to `stdout`.
+
+TODO: figure out what rate we can send captions, and maybe use scrolling as well. This may sort out YouTube issues with this (unwrapped source file):
+
+```
+   timestamp: 0.033000
+   row: 03    col: 25    roll-up: 0
+   00000000001111111111222222222233        00000000001111111111222222222233
+   01234567890123456789012345678901        01234567890123456789012345678901
+  ┌--------------------------------┐      ┌--------------------------------┐
+00|>> Hello, everyone, welcome     |    00|                                |
+01|back. Up next, we               |    01|                                |
+02|have the wonderful Leigh        |    02|                                |
+03|Brenecki, who attendees         |    03|                                |
+04|                                |    04|                                |
+05|                                |    05|                                |
+06|                                |    06|                                |
+07|                                |    07|                                |
+08|                                |    08|                                |
+09|                                |    09|                                |
+10|                                |    10|                                |
+11|                                |    11|                                |
+12|                                |    12|                                |
+13|                                |    13|                                |
+14|                                |    14|                                |
+  └--------------------------------┘      └--------------------------------┘
+```
+
+TODO: consider rewriting libcaption or find an alternative - there's lots of weird bugs, limits enforced in strange ways
+
