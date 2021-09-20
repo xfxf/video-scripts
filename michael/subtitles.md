@@ -12,6 +12,11 @@
 
   Describes CEA-608 caption format.
 
+* Wikipedia describes formats:
+
+  * https://en.wikipedia.org/wiki/EIA-608
+  * https://en.wikipedia.org/wiki/CEA-708
+
 ## Streamtext.net
 
 * `streamtext_client.py`: reverse engineered client for StreamText, pulls the live feed and displays on CLI
@@ -289,3 +294,39 @@ TODO: figure out what rate we can send captions, and maybe use scrolling as well
 
 TODO: consider rewriting libcaption or find an alternative - there's lots of weird bugs, limits enforced in strange ways
 
+* https://github.com/Dash-Industry-Forum/media-tools/tree/master/python/dash_tools
+* https://github.com/GStreamer/gst-plugins-bad/blob/master/ext/closedcaption/gstcccombiner.c
+
+
+### caption-inspector
+
+https://github.com/Comcast/caption-inspector
+
+**Very helpful** - I can see a few things:
+
+* libcaption only does CEA-608 captions (which are very limited), despite structures saying otherwise
+* large cues may cause it to encode bad data, would need to make much shorter cues and do windowing properly ?
+* EIA-608 `caption_block_count`/`cc_count` size is 5 bits, so can have up to 31 blocks per GOP. 4 blocks are "reserved" at the start and end, and each block can store 2 characters max => 27-54 characters
+
+Pre-recorded broadcast content normally sends a lot less data at once than `libcaption`: `libcaption` tries to push 65 blocks in a frame, whereas broadcast typically sends 1 block per frame (or 2 blocks per frame for dual 608+708).
+
+At the start of the program, reset everything:
+
+1. `EOC` `EOC` (end of caption)
+2. `EDM` `EDM` (erase display memory)
+3. `ENM` `ENM` (erase non-display memory)
+
+Then for each cue, for pre-record content:
+
+1. start as soon as the previous caption is on-screen
+2. send `RCL` `RCL` (resume caption loading) `ENM` `ENM` (erase non-display memory) to start a new buffer for the next caption
+3. write out the first line to be displayed
+4. if there are more lines, send `RCL` `RCL` before each new line, then the line
+5. wait for previous cue end time
+6. send `EDM` `EDM` (erase display memory) to hide previous cue
+7. wait for cue start time
+8. send `EOC` `EOC` (end of caption) to show next cue
+
+For live "type it out", use the `RDC` (resume direct captioning) command.
+
+The CEA-608 protocol is a bit like a terminal; we need a `terminfo` to make it do what we want. ;)
