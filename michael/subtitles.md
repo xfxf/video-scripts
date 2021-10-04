@@ -362,3 +362,41 @@ Notes:
 
 Lets see if I can get into a workable state :)
 
+Useful component in `gst-launch-1.0` is `identity silent=false ! fakesink`, this spits out lots of nice events for us.
+
+Need to get the 608 stream, this is in the H264 SEI.
+
+https://gitlab.freedesktop.org/gstreamer/gst-plugins-bad/-/issues/822 suggests something like:
+
+```
+GST_PLUGIN_PATH="target/x86_64-unknown-linux-gnu/debug:${GST_PLUGIN_PATH}" \
+  gst-launch-1.0 -v \
+    cccombiner name=ccc ! cea608overlay ! x264enc pass=quant ! \
+      matroskamux ! filesink location=/tmp/608.mkv \
+    uridecodebin uri=file:///tmp/counting-captioned.mov name=u \
+    u. ! queue ! closedcaption/x-cea-608 ! ccconverter ! \
+      closedcaption/x-cea-608, format=raw ! ccc.caption \
+    u. ! video/x-raw ! queue ! ccc.sink
+```
+
+But the original file from the bug (MOV) had an explicit 608 track, whereas our files have it in an SEI: so this pipeline just stalls out.
+
+https://gitlab.freedesktop.org/gstreamer/gst-plugins-base/-/issues/553 suggests we don't get it from metas
+
+https://gitlab.freedesktop.org/gstreamer/gst-plugins-base/-/issues/553#note_726123 has an MPEG-2 compatible pipeline, which isn't working for H264
+
+```
+gst-launch-1.0 -v filesrc location=./pep458-sub.mp4 ! qtdemux ! h264parse ! identity silent=false ! fakesink
+
+/GstPipeline:pipeline0/GstIdentity:identity0: last-message = chain   ******* (identity0:sink) (1267 bytes, dts: 0:01:10.067000000, pts: 0:01:10.100000000, duration: 0:00:00.033333333, offset: 24447026, offset_end: -1, flags: 00002400 header delta-unit , meta: GstVideoCaptionMeta) 0x7f1d7c006000
+
+```
+
+This doesn't work, it just stalls out:
+
+```
+gst-launch-1.0 -v filesrc location=./pep458-sub.mp4 ! qtdemux ! h264parse ! avdec_h264 ! ccextractor name=cx ! queue ! fakesink  cx. ! queue ! ccconverter ! capsfilter caps=closedcaption/x-cea-608,format=raw ! sccenc ! fakesink
+```
+
+Maybe a better strategy here is to use gstreamer _exclusively_ for mux, not demux?
+
