@@ -297,7 +297,6 @@ TODO: consider rewriting libcaption or find an alternative - there's lots of wei
 * https://github.com/Dash-Industry-Forum/media-tools/tree/master/python/dash_tools
 * https://github.com/GStreamer/gst-plugins-bad/blob/master/ext/closedcaption/gstcccombiner.c
 
-
 ### caption-inspector
 
 https://github.com/Comcast/caption-inspector
@@ -330,3 +329,36 @@ Then for each cue, for pre-record content:
 For live "type it out", use the `RDC` (resume direct captioning) command.
 
 The CEA-608 protocol is a bit like a terminal; we need a `terminfo` to make it do what we want. ;)
+
+### libcaption playground
+
+My playground branch: https://github.com/micolous/libcaption/
+
+Stuff I've implemented:
+
+* Implemented "smearing" of 608 captions, make it a lot more like broadcast; this exposed an issue with timecodes being out of order which I've tried to work around.
+* Added `flv+karaoke`, this acts a bit more like a stenographer, and types a word at a time and uses roll-up.
+* Added support for 708 / DTVCC muxing and parsing, and support for roll-up.
+
+Issues:
+
+* [Caption Inspector has an off-by-one for pen and window styles](https://github.com/Comcast/caption-inspector/issues/14), causes these to be labelled wrong
+* VLC requires opting in to parsing 708 captions, by default it'll only look at 608. Fix: Set `Input / Codecs` -> `Preferred Closed Captions decoder` to `CEA 708`.
+* [VLC has an off-by-one as well](https://code.videolan.org/videolan/vlc/-/issues/26160), which causes incorrect rendering **and** out of array bounds access.
+* [VLC also is very sensitive about where 708 captions start](https://code.videolan.org/videolan/vlc/-/issues/26159)
+
+### gstreamer
+
+I should have looked at this sooner. :)
+
+608 related plugins: https://gitlab.freedesktop.org/gstreamer/gst-plugins-rs/-/tree/master/video/closedcaption/src
+
+Notes:
+
+* It looks like this can do a lot of stuff with 608, not so much with 708.
+* Includes support for muxing and demuxing `.scc` and `.mcc`, which allows passing 608 and 708 streams.
+* Largely written in Rust.
+* Uses libcaption for some things, but a cut down version because gstreamer can do a lot of the mpeg stuff itself.
+
+Lets see if I can get into a workable state :)
+
