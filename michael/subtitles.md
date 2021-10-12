@@ -400,3 +400,91 @@ gst-launch-1.0 -v filesrc location=./pep458-sub.mp4 ! qtdemux ! h264parse ! avde
 
 Maybe a better strategy here is to use gstreamer _exclusively_ for mux, not demux?
 
+```
+GST_PLUGIN_PATH="target/x86_64-unknown-linux-gnu/debug:${GST_PLUGIN_PATH}"   gst-launch-1.0 -v  cccombiner name=ccc ! x264enc ! mp4mux ! filesink location=/tmp/remux.mp4    uridecodebin uri=file:///home/michael/pep458.flv ! ccc.sink  filesrc location=/tmp/smeared/pep458-dtv.mcc ! mccparse ! ccc.caption
+```
+
+Self built bits:
+
+```
+GST_PLUGIN_PATH="$HOME/.local/gst/lib/x86_64-linux-gnu/gstreamer-1.0" LD_LIBRARY_PATH="$HOME/.local/gst/lib/x86_64-linux-gnu" ~/.local/gst/bin/gst-inspect-1.0
+
+GST_PLUGIN_PATH="$HOME/.local/gst/lib/x86_64-linux-gnu/gstreamer-1.0" LD_LIBRARY_PATH="$HOME/.local/gst/lib/x86_64-linux-gnu" ~/.local/gst/bin/gst-launch-1.0
+
+GST_PLUGIN_PATH="$HOME/.local/gst/lib/x86_64-linux-gnu/gstreamer-1.0" LD_LIBRARY_PATH="$HOME/.local/gst/lib/x86_64-linux-gnu" ~/.local/gst/bin/gst-launch-1.0 -v  filesrc location=./pep458-dtv.mp4 ! qtdemux ! h264parse ! avdec_h264 ! queue ! video/x-raw ! ccextractor name=cx ! fakesink   cx. ! queue ! capsfilter caps=closedcaption/x-cea-708,format=cc_data ! ccconverter ! mccenc ! fakesink
+
+/GstPipeline:pipeline0/RsMccEnc:rsmccenc0.GstPad:sink: caps = closedcaption/x-cea-708, format=(string)cdp, framerate=(fraction)60/1
+/GstPipeline:pipeline0/GstCCConverter:ccconverter0.GstPad:sink: caps = closedcaption/x-cea-708, format=(string)cc_data, framerate=(fraction)30/1
+ERROR: from element /GstPipeline:pipeline0/RsMccEnc:rsmccenc0: The stream is in the wrong format.
+/GstPipeline:pipeline0/GstCapsFilter:capsfilter0.GstPad:sink: caps = closedcaption/x-cea-708, format=(string)cc_data, framerate=(fraction)30/1
+Additional debug info:
+video/closedcaption/src/mcc_enc/imp.rs(276): gstrsclosedcaption::mcc_enc::imp (): /GstPipeline:pipeline0/RsMccEnc:rsmccenc0:
+Stream with timecodes on each buffer required
+ERROR: pipeline doesn't want to preroll.
+Setting pipeline to NULL ...
+Freeing pipeline ...
+```
+
+Lets make things less messy:
+
+```sh
+alias gstgit-launch='GST_PLUGIN_PATH="$HOME/.local/gst/lib/x86_64-linux-gnu/gstreamer-1.0" LD_LIBRARY_PATH="$HOME/.local/gst/lib/x86_64-linux-gnu" ~/.local/gst/bin/gst-launch-1.0'
+alias gstgit-inspect='GST_PLUGIN_PATH="$HOME/.local/gst/lib/x86_64-linux-gnu/gstreamer-1.0" LD_LIBRARY_PATH="$HOME/.local/gst/lib/x86_64-linux-gnu" ~/.local/gst/bin/gst-inspect-1.0'
+```
+
+Encodes captions, but output is messed up:
+
+```sh
+gstgit-launch -v \
+  cccombiner name=ccc ! x264enc pass=quant ! mp4mux name=muxer ! filesink location=/tmp/608.mp4 \
+  videotestsrc num-buffers=1800 ! video/x-raw,width=640,height=480 ! ccc. \
+  filesrc location=/tmp/pep/pep458-sub.mcc ! mccparse ! ccconverter ! \
+    closedcaption/x-cea-708,format=cc_data ! ccc.caption
+```
+
+This internal rendering looks correct:
+
+```sh
+gstgit-launch -v \
+  cccombiner name=ccc ! cea608overlay ! x264enc pass=quant ! mp4mux name=muxer ! filesink location=/tmp/608.mp4 \
+  videotestsrc num-buffers=600 ! video/x-raw,width=640,height=480 ! queue ! ccc. \
+  filesrc location=/tmp/pep/pep458-sub.mcc ! mccparse ! queue ! ccconverter ! ccc.caption
+```
+
+gstreamer `x264enc` requires `caption_type == GST_VIDEO_CAPTION_TYPE_CEA708_RAW`, aka `closedcaption/x-cea-708,format=cc_data` to give us `GA94` payloads: https://gitlab.freedesktop.org/gstreamer/gstreamer/-/blob/main/subprojects/gst-plugins-ugly/ext/x264/gstx264enc.c#L2384
+
+Forcing that format messes things up again, even on the `cea608overlay` render:
+
+```sh
+gstgit-launch -v \
+  cccombiner name=ccc ! cea608overlay ! x264enc pass=quant ! mp4mux name=muxer ! filesink location=/tmp/608.mp4 \
+  videotestsrc num-buffers=600 ! video/x-raw,width=640,height=480 ! queue ! ccc. \
+  filesrc location=/tmp/pep/pep458-sub.mcc ! mccparse ! queue ! ccconverter ! closedcaption/x-cea-708,format=cc_data ! ccc.caption
+```
+
+At the moment, `ccconverter` looks like the culprit for badness.
+
+
+### ffmpeg
+
+ffmpeg can read and write SCC (Scenarist CC), and read MCC (MacCaption) 608 and 708 captions, as well as read captions embedded in a MPEG SEI (GA94 / ATSC A53 format). It can also render 608/708 as a hard sub:
+
+```sh
+ffmpeg -i source.flv \
+  -vf subtitles=captions.mcc \
+  -f mp4 -vcodec libx264 \
+  -acodec copy output.flv
+```
+
+It can also preserve captions when transcoding.
+
+However, it cannot mux 608/708 bytes into MPEG:
+
+* https://trac.ffmpeg.org/ticket/1778#comment:10 (open ticket since 2015)
+* https://lists.ffmpeg.org/pipermail/ffmpeg-user/2017-May/036251.html
+
+There are some issues with some MPEG2 and MPEG4 encoders in ffmpeg preserving user data (used as a transport for 608/708).
+
+### WebVTT
+
+https://github.com/w3c/webvtt/issues/320
