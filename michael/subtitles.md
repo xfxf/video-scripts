@@ -464,6 +464,60 @@ gstgit-launch -v \
 
 At the moment, `ccconverter` looks like the culprit for badness.
 
+Debug:
+
+```
+gstgit-launch -v --gst-debug=ccconverter:7 \
+  cccombiner name=ccc ! cea608overlay ! x264enc pass=quant ! mp4mux name=muxer ! filesink location=/tmp/608.mp4 \
+  videotestsrc num-buffers=600 ! video/x-raw,width=640,height=480 ! queue ! ccc. \
+  filesrc location=/tmp/pep/pep458-sub.mcc ! mccparse ! queue ! ccconverter ! closedcaption/x-cea-708,format=cc_data ! ccc.caption
+```
+
+Appears to not only write the first cc_data bytepair, not the second?
+
+```
+# Input
+00:00:02,000  F1:942C  F1:9440  X1:0000  X1:0000  X1:0000    Ch1 {EDM}  Ch1 - PAC  _________  _________  _________    EraseDisplayedMem  _Row:14 -  White_  _________________  _________________  _________________  
+
+00:00:02,033  F1:9425  F1:94AD  X1:0000  X1:0000  X1:0000    Ch1 {RU2}  Ch1 {CR}   _________  _________  _________    Roll Up -  2 Rows  _Carriage Return_  _________________  _________________  _________________  
+
+00:00:02,200  F1:9440  F1:5468  X1:0000  X1:0000  X1:0000    Ch1 - PAC  Ch1: "Th"  _________  _________  _________    _Row:14 -  White_  Chan-1:  "T"  "h"  _________________  _________________  _________________  
+TEXT: Ch1 - "Th" 
+
+00:00:02,333  F1:E973  F1:2080  X1:0000  X1:0000  X1:0000    Ch1: "is"  Ch1 - " "  _________  _________  _________    Chan-1:  "i"  "s"  Channel - 1:  " "  _________________  _________________  _________________  
+TEXT: Ch1 - "is " 
+
+00:00:02,000 - {EDM} {R14:White}
+00:00:02,033 - {RU2} {CR} {R14:White} "This PEP describes changes to "
+
+# Output
+00:00:01,866 - {EDM}
+00:00:01,900 - {RU2} {R14:White} "isPEderis chgeto"
+```
+
+Debug output:
+
+```
+0:00:00.026507900 10466 0x564e3c8edb00 DEBUG            ccconverter gstccconverter.c:2155:gst_cc_converter_transform:<ccconverter0> Converting buffer: 0x7f6c5800bc60, pts 0:00:02.000000000, dts 99:99:99.999999999, dur 0:00:00.033333334, size 28, offset none, offset_end none, flags 0x0 from 4 to 3
+0:00:00.026532700 10466 0x564e3c8edb00 LOG              ccconverter gstccconverter.c:645:compact_cc_data: compacted cc_data from 15 to 6
+0:00:00.026559900 10466 0x564e3c8edb00 TRACE            ccconverter gstccconverter.c:676:cc_data_extract_cea608: 0xfc 0x94 0x2c, valid: 1, type: 0b00
+0:00:00.026584100 10466 0x564e3c8edb00 TRACE            ccconverter gstccconverter.c:676:cc_data_extract_cea608: 0xfc 0x94 0x40, valid: 1, type: 0b00
+0:00:00.026608000 10466 0x564e3c8edb00 LOG              ccconverter gstccconverter.c:714:cc_data_extract_cea608: Extracted cea608-1 of length 4 and cea608-2 of length 0
+0:00:00.026632600 10466 0x564e3c8edb00 DEBUG            ccconverter gstccconverter.c:1029:fit_and_scale_cc_data:<ccconverter0> write out packet with lengths ccp:0, cea608-1:4, cea608-2:0
+0:00:00.026657100 10466 0x564e3c8edb00 LOG              ccconverter gstccconverter.c:814:combine_cc_data: writing 2 cea608-1 fields and 0 cea608-2 fields
+0:00:00.026683700 10466 0x564e3c8edb00 DEBUG            ccconverter gstccconverter.c:2273:gst_cc_converter_transform:<ccconverter0> Converted to buffer: 0x7f6c500047e0, pts 0:00:02.000000000, dts 99:99:99.999999999, dur 0:00:00.033333334, size 6, offset none, offset_end none, flags 0x0
+0:00:00.026756100 10466 0x564e3c8edb00 DEBUG            ccconverter gstccconverter.c:2155:gst_cc_converter_transform:<ccconverter0> Converting buffer: 0x7f6c5800ba20, pts 0:00:02.033333333, dts 99:99:99.999999999, dur 0:00:00.033333334, size 28, offset none, offset_end none, flags 0x0 from 4 to 3
+0:00:00.026780900 10466 0x564e3c8edb00 LOG              ccconverter gstccconverter.c:645:compact_cc_data: compacted cc_data from 15 to 6
+0:00:00.026808200 10466 0x564e3c8edb00 TRACE            ccconverter gstccconverter.c:676:cc_data_extract_cea608: 0xfc 0x94 0x25, valid: 1, type: 0b00
+0:00:00.026841500 10466 0x564e3c8edb00 TRACE            ccconverter gstccconverter.c:676:cc_data_extract_cea608: 0xfc 0x94 0xad, valid: 1, type: 0b00
+0:00:00.026848200 10466 0x564e3c8edb00 LOG              ccconverter gstccconverter.c:714:cc_data_extract_cea608: Extracted cea608-1 of length 4 and cea608-2 of length 0
+0:00:00.026932800 10466 0x564e3c8edb00 DEBUG            ccconverter gstccconverter.c:1029:fit_and_scale_cc_data:<ccconverter0> write out packet with lengths ccp:0, cea608-1:4, cea608-2:0
+0:00:00.026959200 10466 0x564e3c8edb00 LOG              ccconverter gstccconverter.c:814:combine_cc_data: writing 2 cea608-1 fields and 0 cea608-2 fields
+0:00:00.026988100 10466 0x564e3c8edb00 DEBUG            ccconverter gstccconverter.c:2273:gst_cc_converter_transform:<ccconverter0> Converted to buffer: 0x7f6c5800b5a0, pts 0:00:02.033333333, dts 99:99:99.999999999, dur 0:00:00.033333334, size 6, offset none, offset_end none, flags 0x0
+```
+
+Looks like `cccombiner` sees both bytepairs, but only the first one makes it through.
+
 
 ### ffmpeg
 
