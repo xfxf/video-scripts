@@ -518,6 +518,19 @@ Debug output:
 
 Looks like `cccombiner` sees both bytepairs, but only the first one makes it through.
 
+`cc708overlay` requires a split CEA-708 stream (`cc_sink`), it can't handle `GstVideoCaptionMeta`.
+
+Converting from SRT:
+
+```sh
+gstgit-launch -v \
+  cccombiner name=ccc ! cea608overlay ! x264enc pass=quant ! mp4mux name=muxer ! filesink location=/tmp/608.mp4 \
+  videotestsrc num-buffers=6000 pattern=ball ! video/x-raw,width=1280,height=720 ! queue ! ccc. \
+  filesrc location=~/subtitle.srt ! subparse ! tttocea608  mode=pop-on ! closedcaption/x-cea-608,framerate=30/1 !  ccconverter ! closedcaption/x-cea-708,format=cc_data ! ccc.caption
+```
+
+This mostly works, doesn't handle some entity escaping properly, and using roll-up isn't the same as pop-up.  It only uses one cc_data pair per frame -- so it seems like gstreamer really doesn't like us two field-1 `cc_data` in a frame.
+
 
 ### ffmpeg
 
