@@ -531,6 +531,10 @@ gstgit-launch -v \
 
 This mostly works, doesn't handle some entity escaping properly, and using roll-up isn't the same as pop-up.  It only uses one cc_data pair per frame -- so it seems like gstreamer really doesn't like us two field-1 `cc_data` in a frame.
 
+`tttocea608` requires a source with PTS (timing).  It can read in raw text a line at a time, or a newline-separated JSON based on [`struct Lines`](https://gitlab.freedesktop.org/gstreamer/gst-plugins-rs/-/blob/master/video/closedcaption/src/ttutils.rs#L81). Doing the timestamp matching with an interactive source will be interesting. Video encoder should be able to add timestamps on wall time.
+
+gstreamer has an underlying issue though - it requires transcoding to be able to mux captions, you can't just inject a SEI.
+
 
 ### ffmpeg
 
