@@ -2,7 +2,13 @@
 gdp.py - gstreamer data protocol
 Copyright 2021 Michael Farrell <micolous+git@gmail.com>
 
-
+gstgit-launch -v --gst-debug=gdpdepay:7 \
+  cccombiner name=ccc ! cea608overlay ! x264enc pass=quant ! mp4mux name=muxer ! \
+    filesink location=/tmp/608live.mp4 \
+  videotestsrc num-buffers=600 pattern=ball ! video/x-raw,width=1280,height=720 ! queue ! ccc. \
+  tcpserversrc port=3000 ! gdpdepay ! queue ! tttocea608  mode=roll-up2 ! \
+    closedcaption/x-cea-608,framerate=30/1 ! queue ! ccconverter ! \
+    closedcaption/x-cea-708,format=cc_data ! ccc.caption
 """
 
 import asyncio
@@ -12,6 +18,8 @@ from enum import IntFlag, IntEnum
 import time
 from struct import Struct
 from typing import Optional
+
+from streamtext_client import StreamTextClient
 
 # https://github.com/GStreamer/gst-plugins-bad/blob/master/gst/gdp/dataprotocol.c
 # https://github.com/GStreamer/gst-plugins-bad/blob/master/gst/gdp/dataprotocol.h
@@ -175,7 +183,7 @@ async def gdp_client():
         typ=PayloadType.BUFFER,
         length=0,
         pts=0,
-        duration=400_000,
+        duration=1, #400_000,
         offset=0xffffffffffffffff,
         offset_end=0xffffffffffffffff,
         buffer_flags=0,
@@ -183,18 +191,35 @@ async def gdp_client():
         header_crc=0,
         payload_crc=0,
     )
+    streamtext = StreamTextClient()
+    stream = streamtext.stream('IHaveADream', language='en')
+    d = ''
 
-    while 1:
+    #while 1:
+    for msg in stream:
         pkt.dts = pkt.pts = time.monotonic_ns() - start_pts
-        print(f'packet {pkt.dts}')
-        payload = f'Hello {pkt.dts}\n'.encode('utf-8')
-        pkt.for_payload(payload)
+        for evt in msg.events:
+            if evt.basic:
+                d += evt.basic
 
-        o = pkt.pack() + payload
-        print(binascii.hexlify(o))
-        writer.write(o)
-        await writer.drain()
-        await asyncio.sleep(1)
+        if ' ' in d:
+            s = d.rindex(' ')
+            od = d[:s]
+            d = d[s + 1:]
+
+            print('>>>', od)
+            payload = od.encode('utf-8')
+
+            #print(f'packet {pkt.dts}')
+            #payload = f'Hello {pkt.dts}\n'.encode('utf-8')
+            pkt.for_payload(payload)
+
+            o = pkt.pack() + payload
+            print(binascii.hexlify(o))
+            writer.write(o)
+            await writer.drain()
+
+        await asyncio.sleep(.3)
 
 
 if __name__ == '__main__':
