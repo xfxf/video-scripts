@@ -552,6 +552,20 @@ gstgit-launch -v \
 
 gstreamer has an underlying issue though - it requires transcoding to be able to mux captions, you can't just inject a SEI.
 
+Started writing a patch!
+
+```sh
+gstgit-launch --gst-debug=h264parse:7 -v \
+  cccombiner name=ccc schedule=false ! h264parse insert-a53-cc=true ! \
+    identity silent=false ! mp4mux name=muxer ! filesink location=/tmp/608live.mp4 buffer-mode=2 \
+  filesrc location=./ball.mp4 ! qtdemux ! queue ! ccc. \
+  tcpserversrc port=3000 ! gdpdepay ! queue ! tttocea608 ! closedcaption/x-cea-608,framerate=30/1 ! \
+    queue ! ccconverter ! closedcaption/x-cea-708,format=cc_data ! ccc.caption
+```
+
+Can't put caption data on frame 0.  That does bad things.  May have an issue with SEI being part of the wrong frame? unsure.
+
+`cccombiner schedule=false` is critical -- else all the captions get jumbled up (DTS order != PTS order).
 
 ### ffmpeg
 
