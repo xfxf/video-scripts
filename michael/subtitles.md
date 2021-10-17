@@ -533,6 +533,23 @@ This mostly works, doesn't handle some entity escaping properly, and using roll-
 
 `tttocea608` requires a source with PTS (timing).  It can read in raw text a line at a time, or a newline-separated JSON based on [`struct Lines`](https://gitlab.freedesktop.org/gstreamer/gst-plugins-rs/-/blob/master/video/closedcaption/src/ttutils.rs#L81). Doing the timestamp matching with an interactive source will be interesting. Video encoder should be able to add timestamps on wall time.
 
+`gdp.py` has an implementation of gStreamer Data Protocol, and some glue code code for reading from StreamText.  It does not support text edits -- `ttjson` doesn't support editing.
+
+A complete-ish pipeline for that, with subs delivered as `ttjson` over `tcp:localhost:3000`:
+
+```sh
+gstgit-launch -v \
+  cccombiner name=ccc ! timecodestamper ! cea608overlay ! \
+    timeoverlay time-mode=time-code ! x264enc pass=quant ! \
+    mp4mux name=muxer filesink location=/tmp/608live.mp4 \
+  videotestsrc num-buffers=600 pattern=ball ! video/x-raw,width=1280,height=720 ! queue ! ccc. \
+  tcpserversrc port=3000 ! gdpdepay ! queue ! tttocea608 ! \
+    closedcaption/x-cea-608,framerate=30/1 ! queue ! ccconverter ! \
+    closedcaption/x-cea-708,format=cc_data ! ccc.caption
+```
+
+#### gstreamer transcode requirement
+
 gstreamer has an underlying issue though - it requires transcoding to be able to mux captions, you can't just inject a SEI.
 
 
