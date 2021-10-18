@@ -14,29 +14,26 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-This script runs `IHaveADream` from streamtext.net, using streamtext_client.
+See also: https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/1178
 
 gstgit-launch -v \
   cccombiner name=ccc ! timecodestamper ! cea608overlay ! \
     timeoverlay time-mode=time-code ! x264enc pass=quant ! \
-    mp4mux name=muxer filesink location=/tmp/608live.mp4 \
+    mp4mux name=muxer ! filesink location=/tmp/608-live-encoded.mp4 \
   videotestsrc num-buffers=600 pattern=ball ! video/x-raw,width=1280,height=720 ! queue ! ccc. \
   tcpserversrc port=3000 ! gdpdepay ! queue ! tttocea608 ! \
-    closedcaption/x-cea-608,framerate=30/1 ! queue ! ccconverter ! \
+    closedcaption/x-cea-608,framerate=30/1 ! ccconverter ! \
     closedcaption/x-cea-708,format=cc_data ! ccc.caption
 """
 
-import asyncio
 import binascii
 import dataclasses
 from enum import IntFlag, IntEnum
-import json
 from struct import Struct
-import time
 from typing import Optional
 import uuid
 
-from streamtext_client import StreamTextClient
+# from streamtext_client import StreamTextClient
 
 # https://github.com/GStreamer/gst-plugins-bad/blob/master/gst/gdp/dataprotocol.c
 # https://github.com/GStreamer/gst-plugins-bad/blob/master/gst/gdp/dataprotocol.h
@@ -187,83 +184,24 @@ def make_event_caps(caps: Optional[bytes] = None, typ: PayloadType = PayloadType
     return hdr.pack() + caps
 
 
-async def gdp_client():
-    print('Starting gdp_client: localhost:3000')
-    reader, writer = await asyncio.open_connection('::1', 3000)
-    start_pts = time.monotonic_ns()
+def gdp_setup(writer, json_fmt: bool = True) -> str:
+    """Setup a GDP stream for tttocea608, and return a generated stream-id."""
     stream_id = uuid.uuid4().hex
 
-    print('Sending caps')
+    # First, we need to to declare a stream-start
     writer.write(make_event_caps(
         f'GstEventStreamStart, stream-id=(string){stream_id}/src, flags=(GstStreamFlags)GST_STREAM_FLAG_SPARSE;'.encode('utf-8'),
         typ=PayloadType.EVENT_STREAM_START))
-    #writer.write(make_event_caps(b'text/x-raw'))
-    writer.write(make_event_caps(b'application/x-json,format=cea608'))
+
+    # Next, our caps (content type).
+    if json_fmt:
+        writer.write(make_event_caps(b'application/x-json,format=cea608'))
+    else:
+        writer.write(make_event_caps(b'text/x-raw'))
+
+    # Finally, an event-segment.
     writer.write(make_event_caps(
         b'GstEventSegment, segment=(GstSegment)"segment, flags=(GstSegmentFlags)GST_SEGMENT_FLAG_NONE, rate=(double)1, applied-rate=(double)1, format=(GstFormat)time, base=(guint64)0, offset=(guint64)0, start=(guint64)0, stop=(guint64)18446744073709551615, time=(guint64)0, position=(guint64)0, duration=(guint64)18446744073709551615;";',
         typ=PayloadType.EVENT_SEGMENT))
-    await writer.drain()
 
-    # base packet, to avoid re-alloc
-    pkt = GdpHeader(
-        version_major=1,
-        version_minor=0,
-        flags=HeaderFlag.CRC_HEADER,
-        typ=PayloadType.BUFFER,
-        length=0,
-        pts=0,
-        # tttojson needs a duration, even for non-PopOn captions.
-        duration=1, #400_000,
-        offset=0xffffffffffffffff,
-        offset_end=0xffffffffffffffff,
-        buffer_flags=0,
-        dts=0xffffffffffffffff,
-        header_crc=0,
-        payload_crc=0,
-    )
-    streamtext = StreamTextClient()
-    stream = streamtext.stream('IHaveADream', language='en')
-    d = ''
-
-    #while 1:
-    for msg in stream:
-        pkt.pts = time.monotonic_ns() - start_pts
-        for evt in msg.events:
-            if evt.basic:
-                d += evt.basic
-
-        if ' ' in d:
-            # We want to only output on a word boundary.
-            s = d.rindex(' ')
-            od = d[:s]
-            d = d[s + 1:]
-
-            od = json.dumps(dict(
-                lines=[dict(
-                    chunks=[dict(
-                        text=od,
-                        style='White',
-                        underline=False,
-                    )],
-                    carriage_return=False,
-                )],
-                mode='RollUp3',
-            ))
-
-            print('>>>', od)
-            payload = od.encode('utf-8')
-
-            #print(f'packet {pkt.dts}')
-            #payload = f'Hello {pkt.dts}\n'.encode('utf-8')
-            pkt.for_payload(payload)
-
-            o = pkt.pack() + payload
-            #print(binascii.hexlify(o))
-            writer.write(o)
-            await writer.drain()
-
-        await asyncio.sleep(.3)
-
-
-if __name__ == '__main__':
-    asyncio.run(gdp_client())
+    return stream_id
