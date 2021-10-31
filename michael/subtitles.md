@@ -539,12 +539,12 @@ A complete-ish pipeline for that, with subs delivered as `ttjson` over `tcp:loca
 
 ```sh
 gstgit-launch -v \
-  cccombiner name=ccc ! timecodestamper ! cea608overlay ! \
+  cccombiner name=ccc schedule=false ! timecodestamper ! cea608overlay ! \
     timeoverlay time-mode=time-code ! x264enc pass=quant ! \
     mp4mux name=muxer filesink location=/tmp/608live.mp4 \
   videotestsrc num-buffers=600 pattern=ball ! video/x-raw,width=1280,height=720 ! queue ! ccc. \
-  tcpserversrc port=3000 ! gdpdepay ! queue ! tttocea608 ! \
-    closedcaption/x-cea-608,framerate=30/1 ! queue ! ccconverter ! \
+  tcpserversrc port=3000 ! gdpdepay ! tttocea608 ! \
+    closedcaption/x-cea-608 ! ccconverter ! \
     closedcaption/x-cea-708,format=cc_data ! ccc.caption
 ```
 
@@ -556,18 +556,24 @@ Started writing a patch: https://gitlab.freedesktop.org/gstreamer/gstreamer/-/me
 
 ```sh
 gstgit-launch -v \
-  cccombiner name=ccc schedule=false ! h264parse insert-a53-cc=true ! \
-    mp4mux name=muxer ! filesink location=/tmp/608live.mp4 buffer-mode=2 \
+  cccombiner name=ccc schedule=false ! h264parse insert-cc=a53 ! \
+    mp4mux name=muxer ! filesink location=/tmp/608live.mp4 \
   filesrc location=./ball.mp4 ! qtdemux ! queue ! ccc. \
-  tcpserversrc port=3000 ! gdpdepay ! queue ! tttocea608 ! closedcaption/x-cea-608,framerate=30/1 ! \
-    ccconverter ! closedcaption/x-cea-708,format=cc_data ! ccc.caption
+  tcpserversrc port=3000 ! gdpdepay ! tttocea608 ! \
+    closedcaption/x-cea-608 ! ccconverter ! \
+    closedcaption/x-cea-708,format=cc_data ! ccc.caption
 ```
 
 Can't put caption data on frame 0.  That does bad things.  May have an issue with SEI being part of the wrong frame? unsure.
 
 `cccombiner schedule=false` is critical -- else all the captions get jumbled up (DTS order != PTS order).
 
-`tttocea608` still likes having real durations on `RollUp` captions -- this allows it to smear output across multiple frames.  Using `duration=1` _works_, it's just not that nice.
+#### misc tttocea608 issues
+
+* `tttocea608` still likes having real durations on `RollUp` captions -- this allows it to smear output across multiple frames.  Using `duration=1` (nanosecond) _works_, it's just not that nice.
+
+* `tttocea608` [PopOn is always late](https://gitlab.freedesktop.org/gstreamer/gst-plugins-rs/-/issues/172), it doesn't start processing a cue until **at** PTS.
+
 
 ### ffmpeg
 
@@ -592,3 +598,55 @@ There are some issues with some MPEG2 and MPEG4 encoders in ffmpeg preserving us
 ### WebVTT
 
 https://github.com/w3c/webvtt/issues/320
+
+### TTML
+
+* https://muygs2x2vhb2pjk6g160f1s8-wpengine.netdna-ssl.com/wp-content/uploads/2021/04/A343-2018-Captions-and-Subtitles.pdf
+* https://muygs2x2vhb2pjk6g160f1s8-wpengine.netdna-ssl.com/wp-content/uploads/2021/09/A343-2018-Captions-and-Subtitles-with-Amend-1-2.pdf
+
+Annex A is interesting.
+
+* https://bbc.github.io/ttml-in-subtitle-flows-csun-presentation/
+
+iOS doesn't support TTML?
+
+* https://docs.edgecast.com/video/Content/Setup/Captions-Subtitles.htm
+* https://github.com/google/shaka-player/issues/986
+* HLS.js may support it in an IMSC blob? or with a sideloaded track.
+  * https://github.com/video-dev/hls.js/pull/3016
+
+
+#### Shaka
+
+Shaka player does TTML?
+
+https://storage.googleapis.com/shaka-demo-assets/angel-one/dash.mpd points at https://storage.googleapis.com/shaka-demo-assets/angel-one/text_en.mp4, it's doing byte range fetches for blobs on GCS.
+
+Mediainfo says:
+
+```
+General
+Complete name                            : text_en.mp4
+Format                                   : MPEG-4
+Format profile                           : Base Media
+Codec ID                                 : isom (iso8/mp41/dash/cmfc)
+File size                                : 5.14 KiB
+Duration                                 : 1 min 4 s
+Overall bit rate                         : 658 b/s
+Encoded date                             : UTC 2020-02-13 01:45:36
+Tagged date                              : UTC 2020-02-13 01:45:36
+
+Text
+ID                                       : 1
+Format                                   : wvtt
+Codec ID                                 : wvtt
+Duration                                 : 1 min 4 s
+Bit rate                                 : 279 b/s
+Stream size                              : 2.18 KiB (42%)
+Language                                 : English
+Forced                                   : No
+Encoded date                             : UTC 2020-02-13 01:45:36
+Tagged date                              : UTC 2020-02-13 01:45:36
+```
+
+* [DASH Source Simulator uses incorrectly formed H.264](https://github.com/Dash-Industry-Forum/dash-live-source-simulator/issues/99), which then [got adopted by a bunch of web players](https://github.com/google/shaka-player/issues/3715)
