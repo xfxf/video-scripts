@@ -1,26 +1,29 @@
 # subtitles streaming notes
 
-* [Mux: Subtitles, Captions, WebVTT, HLS, and those magic flags](https://mux.com/blog/subtitles-captions-webvtt-hls-and-those-magic-flags/)
+* [Mux: Subtitles, Captions, WebVTT, HLS, and those magic flags](https://mux.com/blog/subtitles-captions-webvtt-hls-and-those-magic-flags/) ~~Suggests they don't support CTA 608/708 :(~~
 
-  Suggests they don't support CEA608/708 :(
+  **Update (Nov 2021):** [Mux now supports live 608 captions](#mux-attempt-2-november-2021). 
 
-* [libcaption](https://github.com/szatmary/libcaption) library and tools for handling CEA-608/708 streams in FLV
+* [libcaption](https://github.com/szatmary/libcaption) library and tools for handling CTA-608/708 streams in FLV
 
   Author wrote it while at Twitch, now works for Mux?
 
 * [47 CFR 15.119 - Closed caption decoder requirements for analog television receivers](https://www.govinfo.gov/content/pkg/CFR-2007-title47-vol1/pdf/CFR-2007-title47-vol1-sec15-119.pdf)
 
-  Describes CEA-608 caption format.
+  Describes CTA-608 caption format.
+
+* [ANSI/CTA-708-E R-2018](https://shop.cta.tech/products/digital-television-dtv-closed-captioning). While this is published in the CTA webshop, it costs $0.
 
 * Wikipedia describes formats:
 
-  * https://en.wikipedia.org/wiki/EIA-608
-  * https://en.wikipedia.org/wiki/CEA-708
+  * https://en.wikipedia.org/wiki/EIA-608 (still present)
+  * https://en.wikipedia.org/wiki/CEA-708 (errors have been reported in the format description, _content removed September 2021_)
 
 ## Streamtext.net
 
 * `streamtext_client.py`: reverse engineered client for StreamText, pulls the live feed and displays on CLI
-* `streamtext_monitor.py`: uses our StreamText client library to export metrics for Prometheus, so we can see if we're still getting data
+* `streamtext_monitor.py`: export StreamText metrics for Prometheus, so we can see if we're still getting data
+* `streamtext_to_cea608gdp.py`: exports StreamText as gstreamer `ttjson` over GDP (gstreamer data protocol), for use with the `tttocea608` element
 
 ## OBS
 
@@ -40,6 +43,7 @@ Investigated adding support for subtitle pass-through for OBS VLC source:
 
 API call via OBS-WebSockets:
 
+* uses libcaption, uses 608 captions
 * only supports complete caption updates, no backspace support
 * currently going through major rewrite, not accepting patches on 4.x, master branch (5.x) is incomplete
 * [obs-websockets-streamtext-captions](https://github.com/EddieCameron/obs-websocket-streamtext-captions): provides bridge from Streamtext.net into WebSockets-OBS, but only supports complete subs, no backspace
@@ -73,7 +77,6 @@ ffmpeg -i source.ts -f flv \
 * Audio: AAC stereo
 * Retains CEA-608/708 subtitles from original stream (H.264 is a compatible container)
 
-
 ## Mux
 
 Stream a pre-recorded FLV to Mux on a loop without transcoding:
@@ -90,6 +93,8 @@ ffmpeg -stream_loop -1 -re -i input.flv \
 * `-f flv`: output as flv container
 
 ### ffprobe outputs (September 2021)
+
+**Update:** [Mux now supports this](#mux-attempt-2-november-2021).
 
 FLV with H.264 video and embedded CEA-608 captions:
 
