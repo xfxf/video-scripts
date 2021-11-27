@@ -73,6 +73,9 @@ ffmpeg -i source.ts -f flv \
 * Audio: AAC stereo
 * Retains CEA-608/708 subtitles from original stream (H.264 is a compatible container)
 
+
+## Mux
+
 Stream a pre-recorded FLV to Mux on a loop without transcoding:
 
 ```sh
@@ -86,7 +89,7 @@ ffmpeg -stream_loop -1 -re -i input.flv \
 * `-c copy`: don't transcode
 * `-f flv`: output as flv container
 
-### ffprobe outputs
+### ffprobe outputs (September 2021)
 
 FLV with H.264 video and embedded CEA-608 captions:
 
@@ -236,7 +239,136 @@ Asset (recorded live stream) is also missing captions:
       variant_bitrate : 697078
 ```
 
-### muxing our own CEA-608 caption track
+### Mux, attempt 2 (November 2021)
+
+[Mux recently announced support for captioning](https://mux.com/blog/support-for-captions-in-live-videos-now-available-crowd-cheers-louder/) (Oct 2021). Lets try this out!
+
+```json
+{
+  "playback_policy" : [
+    "public"
+  ],
+  "embedded_subtitles" : [
+    {
+      "name": "English CC",
+      "passthrough": "English closed captions",
+      "language_code": "en-US",
+      "language_channel": "cc1"
+    }
+  ],
+  "new_asset_settings": {
+    "playback_policy": [
+      "public"
+    ]
+  }
+}
+```
+
+Testing players:
+
+* hlsjs: just works, but need to manually turn on CC in the UI
+* VLC: no subtitle track!
+
+Notes about their support:
+
+* Mux renders the captions into WebVTT format with discrete cues.
+
+* 608 with pop-on captions (like pre-recorded content):
+
+  * Using H.264 High profile and a 60sec loop has breaks in the loop... Mux stalls out for about 12 seconds.
+  * Using Baseline profile and a 120sec loop works OK, even when the captions start 30 seconds into the video.
+
+* 608 with roll-up captions:
+
+  * Mux doesn't work with our libcaption fork's roll-up (it disconnects after about 20 seconds).
+  * Mux works with gstreamer generated captions (tttocea608 + streamtext_to_cea608gdp).
+  * Mux will convert roll-ups into discrete cues.
+  
+    By comparison, YouTube converts roll-ups into an internal format which does the line-feed animation nicely.
+
+    AU Teletext live TV captions doesn't do roll-up line-feed animations either, so they won't notice it's missing. US CC live TV captions does roll-ups, US viewers might notice it.
+
+* The A/53 (608) track is _removed_ from the video track on output.  There is no pass-through.
+
+  We don't control how any of the 608 is rendered, we are essentially beholden to how good or bad that is (as with YouTube).
+
+Streamtext to gstreamer pipeline with roll-up:
+
+```sh
+gstgit-launch cccombiner name=ccc schedule=false ! h264parse insert-cc=a53 ! mp4mux name=muxer ! filesink location=./gst-608ball-streamtext-live.mp4 \
+  filesrc location=./balltime-avc-au-baseline.mp4 ! qtdemux name=q ! queue ! ccc. \
+  tcpserversrc port=3000 ! gdpdepay ! tttocea608 ! closedcaption/x-cea-608 ! ccconverter ! closedcaption/x-cea-708,format=cc_data ! ccc.caption \
+  q.audio_0 ! queue ! muxer.
+
+python3 streamtext_to_cea608gdp.py IHaveADream -l en
+
+ffmpeg -stream_loop -1 -re -i gst-608ball-streamtext-live.mp4 -c copy -f flv "rtmps://global-live.mux.com:443/app/${STREAM_KEY}"
+```
+
+Mux converts the CEA-608 caption track into WebVTT.  For roll-up, these are converted to pop-on cues:
+
+Streamtext output / GStreamer input:
+
+```
+>> {"lines": [{"chunks": [{"text": "open the doors of", "style": "White", "underline": false}], "carriage_return": false}], "mode": "RollUp3"}
+>> {"lines": [{"chunks": [{"text": "opportunity to", "style": "White", "underline": false}], "carriage_return": false}], "mode": "RollUp3"}
+```
+
+GStreamer output / Mux input (debug output from Caption Inspector):
+
+```
+00:01:11,133  F1:6E20  F1:F468  F1:E520  F1:94AD  F1:9426    Ch1: "n "  Ch1: "th"  Ch1: "e "  Ch1 {CR}   Ch1 {RU3}    Chan-1:  "n"  " "  Chan-1:  "t"  "h"  Chan-1:  "e"  " "  _Carriage Return_  Roll Up -  3 Rows  
+              F1:94D0  F1:64EF  F1:EFF2  F1:7320  F1:EFE6    Ch1 - PAC  Ch1: "do"  Ch1: "or"  Ch1: "s "  Ch1: "of"    Row:14  Column:00  Chan-1:  "d"  "o"  Chan-1:  "o"  "r"  Chan-1:  "s"  " "  Chan-1:  "o"  "f"  
+TEXT: Ch1 - "n the doors of" 
+
+...
+
+00:01:11,566  
+TEXT: Ch1 - " o" 
+
+00:01:11,600  
+TEXT: Ch1 - "pp" 
+
+00:01:11,633  F1:EFF2  F1:F475  F1:6EE9  F1:F479  F1:20F4    Ch1: "or"  Ch1: "tu"  Ch1: "ni"  Ch1: "ty"  Ch1: " t"    Chan-1:  "o"  "r"  Chan-1:  "t"  "u"  Chan-1:  "n"  "i"  Chan-1:  "t"  "y"  Chan-1:  " "  "t"  
+TEXT: Ch1 - "ortunity to" 
+```
+
+Mux output:
+
+```webvtt
+WEBVTT
+X-TIMESTAMP-MAP=LOCAL:00:00:00.000,MPEGTS:900000
+
+00:35:48.000 --> 00:35:48.242 position:10.00% size:80.00% align:start
+sunlit path of racial justice.
+Now is the time to open the
+doors of
+
+00:35:48.242 --> 00:35:48.275 position:10.00% size:80.00% align:start
+sunlit path of racial justice.
+Now is the time to open the
+doors of o
+
+00:35:48.275 --> 00:35:48.309 position:10.00% size:80.00% align:start
+sunlit path of racial justice.
+Now is the time to open the
+doors of opp
+
+00:35:48.309 --> 00:35:48.709 position:10.00% size:80.00% align:start
+sunlit path of racial justice.
+Now is the time to open the
+doors of opportunity to
+```
+
+Mux playlist fragment sample:
+
+```
+#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="sub1",CHARACTERISTICS="public.accessibility.transcribes-spoken-dialog,public.accessibility.describes-music-and-sound",NAME="English CC",AUTOSELECT=YES,DEFAULT=NO,FORCED=NO,LANGUAGE="en-US",URI="https://manifest-gce-us-east4-production.fastly.mux.com/123123/subtitles.m3u8?expires=123123&signature=123123=="
+```
+
+The playlist [declares that we're sending SDH](https://datatracker.ietf.org/doc/html/rfc8216#section-4.3.4.1) (transcribing all audio cues, not just dialogue)... but we actually haven't declared this on the Mux side.  There's also no way to set this as `FORCED` (but that may not be important for us).
+
+## muxing our own CEA-608 caption track
 
 TODO: Need some bug fixes in libcaption:
 
@@ -558,10 +690,11 @@ Started writing a patch: https://gitlab.freedesktop.org/gstreamer/gstreamer/-/me
 gstgit-launch -v \
   cccombiner name=ccc schedule=false ! h264parse insert-cc=a53 ! \
     mp4mux name=muxer ! filesink location=/tmp/608live.mp4 \
-  filesrc location=./ball.mp4 ! qtdemux ! queue ! ccc. \
+  filesrc location=./ball.mp4 ! qtdemux name=q ! queue ! ccc. \
   tcpserversrc port=3000 ! gdpdepay ! tttocea608 ! \
     closedcaption/x-cea-608 ! ccconverter ! \
-    closedcaption/x-cea-708,format=cc_data ! ccc.caption
+    closedcaption/x-cea-708,format=cc_data ! ccc.caption \
+  q.audio_0 ! queue ! muxer.
 ```
 
 Can't put caption data on frame 0.  That does bad things.  May have an issue with SEI being part of the wrong frame? unsure.
