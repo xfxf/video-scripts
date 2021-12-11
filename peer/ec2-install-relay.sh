@@ -124,23 +124,6 @@ rtmp {
 }
 tac
 
-cd /root
-cat <<tac > upsert.json
-{
-        "Comment": "UPSERT room ingest dns",
-        "Changes": [{
-                "Action": "UPSERT",
-                "ResourceRecordSet": {
-                        "Name": "rtmp-$INSTANCE_TYPE-r$ROOM_NUMBER.$DOMAIN_NAME",
-                        "Type": "CNAME",
-                        "TTL": 60,
-                        "ResourceRecords": [{ "Value": "$PUB_HOSTNAME"}]
-                }
-        }]
-}
-tac
-aws route53 change-resource-record-sets --hosted-zone-id $ZONE_ID --change-batch file://upsert.json
-
 hostnamectl set-hostname rtmp-$INSTANCE_TYPE-r$ROOM_NUMBER.$DOMAIN_NAME
 
 mkdir /video
@@ -161,7 +144,31 @@ cat <<tac > /var/lib/cloud/scripts/per-boot/confrenceboot.sh
 #!/bin/bash
 timedatectl set-timezone Australia/Melbourne
 export VIDEO_REMAIN=\`df -H --output=avail /video | tail -n1 | xargs\`
-curl -X POST -H 'Content-type: application/json' --data "{\"content\":\"Room $ROOM_NUMBER booted, \$VIDEO_REMAIN remining record space.\"}" https://discord.com/api/webhooks/919180089126711317/9Jnaf2c9tLOmVOvzfsH6scPclcDX69_NirT8jDyOKcM8oBYEYjGRh_9JXbapFh9G_0kg
+aws ec2 describe-tags --region ap-southeast-2 --filters "Name=resource-id,Values=$INSTANCE_ID" > instance-tags.json
+INSTANCE_TYPE=\`jq -r '.Tags[]| select(.Key == "i-type")|.Value' instance-tags.json\`
+ROOM_NUMBER=\`jq -r '.Tags[]| select(.Key == "i-room")|.Value' instance-tags.json\`
+PUB_HOSTNAME=\`curl -s http://instance-data/latest/meta-data/public-hostname\`
+
+
+cd /root
+cat <<token > upsert.json
+{
+        "Comment": "UPSERT room ingest dns",
+        "Changes": [{
+                "Action": "UPSERT",
+                "ResourceRecordSet": {
+                        "Name": "rtmp-$INSTANCE_TYPE-r$ROOM_NUMBER.$DOMAIN_NAME",
+                        "Type": "CNAME",
+                        "TTL": 60,
+                        "ResourceRecords": [{ "Value": "\$PUB_HOSTNAME"}]
+                }
+        }]
+}
+token
+aws route53 change-resource-record-sets --hosted-zone-id $ZONE_ID --change-batch file://upsert.json
+rm /root/upsert.json
+
+curl -X POST -H 'Content-type: application/json' --data "{\"content\":\"Room $ROOM_NUMBER booted, \$VIDEO_REMAIN remining record space.\n\nInstance domain: \$PUB_HOSTNAME\"}" https://discord.com/api/webhooks/919180089126711317/9Jnaf2c9tLOmVOvzfsH6scPclcDX69_NirT8jDyOKcM8oBYEYjGRh_9JXbapFh9G_0kg
 tac
 chmod 0744 /var/lib/cloud/scripts/per-boot/confrenceboot.sh
 
