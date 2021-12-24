@@ -1,86 +1,101 @@
 #cloud-config
 
 write_files:
-- path: /opt/ndv-jitsi/install-preqreqs.sh
-  permissions: 0755
-  owner: root
-  content: |
-    #!/bin/bash -eu
-    set -o pipefail
+  - path: /opt/ndv-jitsi/get-tags.sh
+    permissions: 0755
+    owner: root
+    content: |
+      #!/bin/bash -eu
+      set -o pipefail
+      INSTANCE_ID=`curl -s http://instance-data/latest/meta-data/instance-id`
+      aws ec2 describe-tags --region ap-southeast-2 --filters "Name=resource-id,Values=$INSTANCE_ID" > /opt/ndv-jitsi/instance-tags.json
 
-    apt -y update
+  - path: /etc/jitsi/jibri/jibri.conf.tmpl
+    permissions: 0644
+    owner: root
+    content: |
+      jibri {
+          recording {
+              recordings-directory = "/srv/recordings"
+              finalize-script = ""
+          }
 
-    DEBIAN_FRONTEND=noninteractive apt -y install awscli curl jq apt-transport-https
-    apt-add-repository universe
+          chrome {
+              flags = [
+                  "--use-fake-ui-for-media-stream",
+                  "--start-maximized",
+                  "--kiosk",
+                  "--enabled",
+                  "--disable-infobars",
+                  "--autoplay-policy=no-user-gesture-required",
+              ]
+          }
 
-    apt -y update
+          api {
+              xmpp {
+                  environments = [
+                      {
+                          name = "prod environment"
+                          xmpp-server-hosts = ["$JITSI_MEET_HOST"]
+                          xmpp-domain = "$JITSI_MEET_HOST"
 
+                          control-muc {
+                              domain = "internal.auth.$JITSI_MEET_HOST"
+                              room-name = "JibriBrewery"
+                              nickname = "jibri-nickname"
+                          }
 
-- path: /opt/ndv-jitsi/get-tags.sh
-  permissions: 0755
-  owner: root
-  content: |
-    #!/bin/bash -eu
-    set -o pipefail
-    INSTANCE_ID=`curl -s http://instance-data/latest/meta-data/instance-id`
-    aws ec2 describe-tags --region ap-southeast-2 --filters "Name=resource-id,Values=$INSTANCE_ID" > /opt/ndv-jitsi/instance-tags.json
+                          control-login {
+                              domain = "$JIBRI_CONTROL_LOGIN_DOMAIN"
+                              username = "$JIBRI_CONTROL_LOGIN_USERNAME"
+                              password = "$JIBRI_CONTROL_LOGIN_PASSWORD"
+                          }
 
-- path: /opt/ndv-jitsi/set-hostname.sh
-  permissions: 0755
-  owner: root
-  content: |
-    #!/bin/bash -eu
-    set -o pipefail
+                          call-login {
+                              domain = "$JIBRI_CALL_LOGIN_DOMAIN"
+                              username = "$JIBRI_CALL_LOGIN_USERNAME"
+                              password = "$JIBRI_CALL_LOGIN_PASSWORD"
+                          }
 
-    cd $(dirname "$0")
+                          strip-from-room-domain = "conference."
+                          usage-timeout = "0"
 
-    TAG_NAME=`jq -r '.Tags[]| select(.Key == "Name")|.Value' /opt/ndv-jitsi/instance-tags.json`
-    ZONE_ID="Z09102521YXWQT2ZKMPP7"
-    DOMAIN_NAME="aws.nextdayvideo.com.au"
+                          trust-all-xmpp-certs = true
+                      }
+                  ]
+              }
+          }
+      }
 
-    FQ_HOSTNAME=$TAG_NAME.$DOMAIN_NAME
+  - path: /opt/ndv-jitsi/install-jibri.sh
+    permissions: 0755
+    owner: root
+    content: |
+      #!/bin/bash -eu
+      set -o pipefail
 
-    hostnamectl set-hostname $FQ_HOSTNAME
+      cd $(dirname "$0")
 
-    PUBLIC_IP=`curl -s http://instance-data/latest/meta-data/public-ipv4`
+      mkdir /srv/recordings
+      chown jibri:jitsi /srv/recordings
 
-    cat <<token > /opt/ndv-jitsi/dns-bach.json
-    {
-            "Comment": "UPSERT jitsi-meet dns",
-            "Changes": [{
-                    "Action": "UPSERT",
-                    "ResourceRecordSet": {
-                            "Name": "$FQ_HOSTNAME",
-                            "Type": "A",
-                            "TTL": 60,
-                            "ResourceRecords": [{ "Value": "$PUBLIC_IP"}]
-                    }
-            }]
-    }
-    token
-    aws route53 change-resource-record-sets --hosted-zone-id $ZONE_ID --change-batch file:///opt/ndv-jitsi/dns-bach.json
-    rm /opt/ndv-jitsi/dns-bach.json
+      export JITSI_MEET_HOST=`jq -r '.Tags[]| select(.Key == "JitsiMeetHost")|.Value' /opt/ndv-jitsi/instance-tags.json`  
 
-- path: /opt/ndv-jitsi/install-jibri.sh
-  permissions: 0755
-  owner: root
-  content: |
-    #!/bin/bash -eu
-    set -o pipefail
+      export AWS_DEFAULT_REGION=`curl -s http://instance-data/latest/meta-data/placement/region`
+      aws ssm get-parameter --name /jitsi/"$JITSI_MEET_HOST" --with-decryption --output text --query Parameter.Value > /opt/ndv-jitsi/jibri-auth.json
 
-    cd $(dirname "$0")
+      export JIBRI_CONTROL_LOGIN_DOMAIN=`jq -r .control.domain < /opt/ndv-jitsi/jibri-auth.json`
+      export JIBRI_CONTROL_LOGIN_USERNAME=`jq -r .control.username < /opt/ndv-jitsi/jibri-auth.json`
+      export JIBRI_CONTROL_LOGIN_PASSWORD=`jq -r .control.password < /opt/ndv-jitsi/jibri-auth.json`
 
-    export DEBIAN_FRONTEND=noninteractive 
+      export JIBRI_CALL_LOGIN_DOMAIN=`jq -r .call.domain < /opt/ndv-jitsi/jibri-auth.json`
+      export JIBRI_CALL_LOGIN_USERNAME=`jq -r .call.username < /opt/ndv-jitsi/jibri-auth.json`
+      export JIBRI_CALL_LOGIN_PASSWORD=`jq -r .call.password < /opt/ndv-jitsi/jibri-auth.json`
 
-    apt install -y linux-image-extra-virtual
+      envsubst < /etc/jitsi/jibri/jibri.conf.tmpl > /etc/jitsi/jibri/jibri.conf
 
-    # echo "options snd-aloop enable=1,1,1,1,1,1,1,1,1,1,1,1 index=0,1,2,3,4,5,6,7,8,9,10,11" > /etc/modprobe.d/alsa-loopback.conf
-    # echo "snd-aloop">>/etc/modules
-    # modprobe snd-aloop
+      systemctl restart jibri
 
 runcmd:
-- /opt/ndv-jitsi/install-preqreqs.sh
-- /opt/ndv-jitsi/get-tags.sh
-- /opt/ndv-jitsi/set-hostname.sh
-- /opt/ndv-jitsi/install-jibri.sh
-
+  - /opt/ndv-jitsi/get-tags.sh
+  - /opt/ndv-jitsi/install-jibri.sh

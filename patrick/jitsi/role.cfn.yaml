@@ -13,25 +13,34 @@ Resources:
               - "sts:AssumeRole"
             Effect: "Allow"
       Policies:
-      - PolicyName: AutomaticSetup
-        PolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-            - Action:
-                - 'ec2:DescribeTags'
-              Resource: '*'
-              Effect: Allow
-      - PolicyName: Route53
-        PolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-            - Effect: Allow
-              Action:
-                - 'route53:ChangeResourceRecordSets'
-              Resource:
-                - 'arn:aws:route53:::hostedzone/Z09102521YXWQT2ZKMPP7'
-                - 'arn:aws:route53:::delegationset/Z09102521YXWQT2ZKMPP7'
-                - 'arn:aws:route53:::change/Z09102521YXWQT2ZKMPP7'
+        - PolicyName: AutomaticSetup
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Action:
+                  - "ec2:DescribeTags"
+                Resource: "*"
+                Effect: Allow
+        - PolicyName: Route53
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "route53:ChangeResourceRecordSets"
+                Resource:
+                  - "arn:aws:route53:::hostedzone/Z09102521YXWQT2ZKMPP7"
+                  - "arn:aws:route53:::delegationset/Z09102521YXWQT2ZKMPP7"
+                  - "arn:aws:route53:::change/Z09102521YXWQT2ZKMPP7"
+        - PolicyName: JibriConfiguration
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "ssm:PutParameter"
+                Resource:
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/jitsi/*"
 
   InstanceProfile:
     Type: AWS::IAM::InstanceProfile
@@ -65,6 +74,14 @@ Resources:
         - IpProtocol: tcp
           FromPort: 5349
           ToPort: 5349
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 5222
+          ToPort: 5222
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 2222
+          ToPort: 2222 #TODO Definitely remove this one
           CidrIp: 0.0.0.0/0
       SecurityGroupEgress:
         - IpProtocol: -1
