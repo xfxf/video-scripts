@@ -1,0 +1,86 @@
+#cloud-config
+
+write_files:
+- path: /opt/ndv-jitsi/install-preqreqs.sh
+  permissions: 0755
+  owner: root
+  content: |
+    #!/bin/bash -eu
+    set -o pipefail
+
+    apt -y update
+
+    DEBIAN_FRONTEND=noninteractive apt -y install awscli curl jq apt-transport-https
+    apt-add-repository universe
+
+    apt -y update
+
+
+- path: /opt/ndv-jitsi/get-tags.sh
+  permissions: 0755
+  owner: root
+  content: |
+    #!/bin/bash -eu
+    set -o pipefail
+    INSTANCE_ID=`curl -s http://instance-data/latest/meta-data/instance-id`
+    aws ec2 describe-tags --region ap-southeast-2 --filters "Name=resource-id,Values=$INSTANCE_ID" > /opt/ndv-jitsi/instance-tags.json
+
+- path: /opt/ndv-jitsi/set-hostname.sh
+  permissions: 0755
+  owner: root
+  content: |
+    #!/bin/bash -eu
+    set -o pipefail
+
+    cd $(dirname "$0")
+
+    TAG_NAME=`jq -r '.Tags[]| select(.Key == "Name")|.Value' /opt/ndv-jitsi/instance-tags.json`
+    ZONE_ID="Z09102521YXWQT2ZKMPP7"
+    DOMAIN_NAME="aws.nextdayvideo.com.au"
+
+    FQ_HOSTNAME=$TAG_NAME.$DOMAIN_NAME
+
+    hostnamectl set-hostname $FQ_HOSTNAME
+
+    PUBLIC_IP=`curl -s http://instance-data/latest/meta-data/public-ipv4`
+
+    cat <<token > /opt/ndv-jitsi/dns-bach.json
+    {
+            "Comment": "UPSERT jitsi-meet dns",
+            "Changes": [{
+                    "Action": "UPSERT",
+                    "ResourceRecordSet": {
+                            "Name": "$FQ_HOSTNAME",
+                            "Type": "A",
+                            "TTL": 60,
+                            "ResourceRecords": [{ "Value": "$PUBLIC_IP"}]
+                    }
+            }]
+    }
+    token
+    aws route53 change-resource-record-sets --hosted-zone-id $ZONE_ID --change-batch file:///opt/ndv-jitsi/dns-bach.json
+    rm /opt/ndv-jitsi/dns-bach.json
+
+- path: /opt/ndv-jitsi/install-jibri.sh
+  permissions: 0755
+  owner: root
+  content: |
+    #!/bin/bash -eu
+    set -o pipefail
+
+    cd $(dirname "$0")
+
+    export DEBIAN_FRONTEND=noninteractive 
+
+    apt install -y linux-image-extra-virtual
+
+    # echo "options snd-aloop enable=1,1,1,1,1,1,1,1,1,1,1,1 index=0,1,2,3,4,5,6,7,8,9,10,11" > /etc/modprobe.d/alsa-loopback.conf
+    # echo "snd-aloop">>/etc/modules
+    # modprobe snd-aloop
+
+runcmd:
+- /opt/ndv-jitsi/install-preqreqs.sh
+- /opt/ndv-jitsi/get-tags.sh
+- /opt/ndv-jitsi/set-hostname.sh
+- /opt/ndv-jitsi/install-jibri.sh
+

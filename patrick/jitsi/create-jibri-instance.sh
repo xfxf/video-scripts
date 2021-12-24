@@ -11,9 +11,9 @@ SECURITY_GROUP=$(aws cloudformation describe-stacks --stack-name "$STACK_NAME" -
 
 
 aws ec2 run-instances --image-id "ami-0bf8b986de7e3c7ce" \
-  --instance-type "t3.micro" \
+  --instance-type "t3.small" \
   --security-group-ids "${SECURITY_GROUP}" \
-  --user-data file://jitsi-userdata.yaml \
+  --user-data file://jibri-userdata.yaml \
   --associate-public-ip-address \
   --subnet-id subnet-33af5c55 \
   --iam-instance-profile "Name=${INSTANCE_PROFILE}" \
