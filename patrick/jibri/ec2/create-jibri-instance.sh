@@ -18,6 +18,6 @@ aws ec2 run-instances --image-id "$JIBRI_IMAGE_ID" \
   --associate-public-ip-address \
   --subnet-id subnet-33af5c55 \
   --iam-instance-profile "Name=${INSTANCE_PROFILE}" \
-  --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value='$1'},{Key=owner,Value='patrick'},{Key='letsencrypt:email',Value='$2'},{Key=JitsiMeetHost,Value='$3'}]" 
+  --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value='$1'},{Key=owner,Value='patrick'},{Key=JitsiMeetHost,Value='$2'}]" 
 
 echo "Please remember that this instance will cost $250/month if left running!"
