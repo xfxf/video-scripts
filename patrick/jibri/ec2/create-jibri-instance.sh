@@ -14,7 +14,7 @@ aws ec2 run-instances --image-id "$JIBRI_IMAGE_ID" \
   --security-group-ids "${JIBRI_SECURITY_GROUP}" \
   --user-data file://jibri-userdata.yaml \
   --associate-public-ip-address \
-  --subnet-id subnet-33af5c55 \
+  --subnet-id "${SUBNET_ID}" \
   --iam-instance-profile "Name=${INSTANCE_PROFILE}" \
   --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value='$1'},{Key=owner,Value='patrick'},{Key=JitsiMeetHost,Value='$2'}]" 
 
