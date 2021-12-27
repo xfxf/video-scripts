@@ -1,7 +1,5 @@
 1. Recordings, finalize script (_or_ disable recordings)
 
-2. Add a security group for the jibri boxes, allow `5222` from jibri -> jitsi only
-
 3. Remove the 2222 ingress rule (its for testing jibri), and make sure it doesn't break anything
 
 2. Configure the jitsi box automatically:

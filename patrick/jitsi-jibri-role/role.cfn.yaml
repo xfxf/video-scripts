@@ -48,6 +48,20 @@ Resources:
       Roles:
         - !Ref "Role"
 
+  JibriSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: jitsi meet instances
+      VpcId: vpc-7f414a18
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      # SecurityGroupIngress:
+        # - IpProtocol: tcp
+        #   FromPort: 2222
+        #   ToPort: 2222 #TODO Definitely remove this one
+        #   CidrIp: 0.0.0.0/0
+
   SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -78,11 +92,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: 5222
           ToPort: 5222
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 2222
-          ToPort: 2222 #TODO Definitely remove this one
-          CidrIp: 0.0.0.0/0
+          SourceSecurityGroupId: !Ref "JibriSecurityGroup"
       SecurityGroupEgress:
         - IpProtocol: -1
           CidrIp: 0.0.0.0/0
@@ -92,3 +102,5 @@ Outputs:
     Value: !Ref "InstanceProfile"
   SecurityGroup:
     Value: !Ref "SecurityGroup"
+  JibriSecurityGroup:
+    Value: !Ref "JibriSecurityGroup"
