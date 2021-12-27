@@ -13,6 +13,6 @@ aws ec2 run-instances --image-id "ami-0bf8b986de7e3c7ce" \
   --security-group-ids "${SECURITY_GROUP}" \
   --user-data file://jitsi-userdata.yaml \
   --associate-public-ip-address \
-  --subnet-id ${SUBNET_ID}" \
+  --subnet-id "${SUBNET_ID}" \
   --iam-instance-profile "Name=${INSTANCE_PROFILE}" \
   --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value='$1'},{Key=owner,Value='patrick'},{Key='letsencrypt:email',Value='$2'}]" 
