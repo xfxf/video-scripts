@@ -113,6 +113,10 @@ write_files:
       // Testing / experimental features.
       testing: {},
 
+      // CHANGED FROM DEFAULT
+      disableReactions: true,
+      disablePolls: false,
+
       // Enabling this will run the lib-jitsi-meet no audio detection module which
       // will notify the user if the current selected microphone has no audio
       // input and will suggest another valid device if one is present.
@@ -124,6 +128,10 @@ write_files:
       // be potentially unpleasant for other meeting participants.
       enableNoisyMicDetection: true,
 
+      // Disable file recording
+      fileRecordingsEnabled: false,
+      fileRecordingsServiceSharingEnabled: false,
+
       // Whether to enable live streaming or not.
       // CHANGED FROM DEFAULT (commented out & false)
       liveStreamingEnabled: true,
@@ -134,6 +142,11 @@ write_files:
       channelLastN: -1,
 
       // UI
+      // CHANGED FROM DEFAULT
+      requireDisplayName: true, 
+      disable1On1Mode: true,
+      hideConferenceTimer: true,
+
 
       // Disables responsive tiles.
       // disableResponsiveTiles: false,
@@ -169,8 +182,10 @@ write_files:
 
       deploymentInfo: {},
 
+      disableInviteFunctions: true,
+
       // Disables storing the room name to the recents list
-      // doNotStoreRoom: true,
+      doNotStoreRoom: true,
 
       // List of undocumented settings used in lib-jitsi-meet
       hiddenDomain: '$JIBRI_HOSTNAME',
