@@ -1,0 +1,101 @@
+#cloud-config
+
+write_files:
+  - path: /opt/ndv-jitsi/get-tags.sh
+    permissions: 0755
+    owner: root
+    content: |
+      #!/bin/bash -eu
+      set -o pipefail
+      INSTANCE_ID=`curl -s http://instance-data/latest/meta-data/instance-id`
+      aws ec2 describe-tags --region ap-southeast-2 --filters "Name=resource-id,Values=$INSTANCE_ID" > /opt/ndv-jitsi/instance-tags.json
+
+  - path: /etc/jitsi/jibri/jibri.conf.tmpl
+    permissions: 0644
+    owner: root
+    content: |
+      jibri {
+          recording {
+              recordings-directory = "/srv/recordings"
+              finalize-script = ""
+          }
+
+          chrome {
+              flags = [
+                  "--use-fake-ui-for-media-stream",
+                  "--start-maximized",
+                  "--kiosk",
+                  "--enabled",
+                  "--disable-infobars",
+                  "--autoplay-policy=no-user-gesture-required",
+              ]
+          }
+
+          api {
+              xmpp {
+                  environments = [
+                      {
+                          name = "prod environment"
+                          xmpp-server-hosts = ["$JITSI_MEET_HOST"]
+                          xmpp-domain = "$JITSI_MEET_HOST"
+
+                          control-muc {
+                              domain = "internal.auth.$JITSI_MEET_HOST"
+                              room-name = "JibriBrewery"
+                              nickname = "jibri-nickname"
+                          }
+
+                          control-login {
+                              domain = "$JIBRI_CONTROL_LOGIN_DOMAIN"
+                              username = "$JIBRI_CONTROL_LOGIN_USERNAME"
+                              password = "$JIBRI_CONTROL_LOGIN_PASSWORD"
+                          }
+
+                          call-login {
+                              domain = "$JIBRI_CALL_LOGIN_DOMAIN"
+                              username = "$JIBRI_CALL_LOGIN_USERNAME"
+                              password = "$JIBRI_CALL_LOGIN_PASSWORD"
+                          }
+
+                          strip-from-room-domain = "conference."
+                          usage-timeout = "0"
+
+                          trust-all-xmpp-certs = true
+                      }
+                  ]
+              }
+          }
+      }
+
+  - path: /opt/ndv-jitsi/install-jibri.sh
+    permissions: 0755
+    owner: root
+    content: |
+      #!/bin/bash -eu
+      set -o pipefail
+
+      cd $(dirname "$0")
+
+      mkdir /srv/recordings
+      chown jibri:jitsi /srv/recordings
+
+      export JITSI_MEET_HOST=`jq -r '.Tags[]| select(.Key == "JitsiMeetHost")|.Value' /opt/ndv-jitsi/instance-tags.json`  
+
+      export AWS_DEFAULT_REGION=`curl -s http://instance-data/latest/meta-data/placement/region`
+      aws ssm get-parameter --name /jitsi/"$JITSI_MEET_HOST" --with-decryption --output text --query Parameter.Value > /opt/ndv-jitsi/jibri-auth.json
+
+      export JIBRI_CONTROL_LOGIN_DOMAIN=`jq -r .control.domain < /opt/ndv-jitsi/jibri-auth.json`
+      export JIBRI_CONTROL_LOGIN_USERNAME=`jq -r .control.username < /opt/ndv-jitsi/jibri-auth.json`
+      export JIBRI_CONTROL_LOGIN_PASSWORD=`jq -r .control.password < /opt/ndv-jitsi/jibri-auth.json`
+
+      export JIBRI_CALL_LOGIN_DOMAIN=`jq -r .call.domain < /opt/ndv-jitsi/jibri-auth.json`
+      export JIBRI_CALL_LOGIN_USERNAME=`jq -r .call.username < /opt/ndv-jitsi/jibri-auth.json`
+      export JIBRI_CALL_LOGIN_PASSWORD=`jq -r .call.password < /opt/ndv-jitsi/jibri-auth.json`
+
+      envsubst < /etc/jitsi/jibri/jibri.conf.tmpl > /etc/jitsi/jibri/jibri.conf
+
+      systemctl restart jibri
+
+runcmd:
+  - /opt/ndv-jitsi/get-tags.sh
+  - /opt/ndv-jitsi/install-jibri.sh

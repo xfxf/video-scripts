@@ -1,0 +1,123 @@
+Resources:
+  Role:
+    Type: AWS::IAM::Role
+    Properties:
+      ManagedPolicyArns: [arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore]
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Principal:
+              Service:
+                - "ec2.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+            Effect: "Allow"
+      Policies:
+        - PolicyName: AutomaticSetup
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Action:
+                  - "ec2:DescribeTags"
+                Resource: "*"
+                Effect: Allow
+        - PolicyName: Route53
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Action:
+                  - "route53:ChangeResourceRecordSets"
+                Resource:
+                  - "arn:aws:route53:::hostedzone/Z09102521YXWQT2ZKMPP7"
+                  - "arn:aws:route53:::delegationset/Z09102521YXWQT2ZKMPP7"
+                  - "arn:aws:route53:::change/Z09102521YXWQT2ZKMPP7"
+                Effect: Allow                
+        - PolicyName: JibriConfiguration
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Action:
+                  - "secretsmanager:GetRandomPassword"
+                Resource: "*"
+                Effect: Allow
+              - Action:
+                  - "ssm:PutParameter"
+                Resource:
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/jitsi/*"
+                Effect: Allow
+
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref "Role"
+
+  JibriSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: jitsi meet instances
+      VpcId: vpc-7f414a18
+      SecurityGroupIngress:
+        - IpProtocol: udp
+          FromPort: 10000
+          ToPort: 10000
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: udp
+          FromPort: 3478
+          ToPort: 3478
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 5349
+          ToPort: 5349
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      # SecurityGroupIngress:
+        # - IpProtocol: tcp
+        #   FromPort: 2222
+        #   ToPort: 2222 #TODO Definitely remove this one
+        #   CidrIp: 0.0.0.0/0
+
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: jitsi-meet
+      GroupDescription: jitsi meet instances
+      VpcId: vpc-7f414a18
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: udp
+          FromPort: 10000
+          ToPort: 10000
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: udp
+          FromPort: 3478
+          ToPort: 3478
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 5349
+          ToPort: 5349
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 5222
+          ToPort: 5222
+          SourceSecurityGroupId: !Ref "JibriSecurityGroup"
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+Outputs:
+  InstanceProfile:
+    Value: !Ref "InstanceProfile"
+  SecurityGroup:
+    Value: !Ref "SecurityGroup"
+  JibriSecurityGroup:
+    Value: !Ref "JibriSecurityGroup"

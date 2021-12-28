@@ -1,0 +1,286 @@
+#cloud-config
+
+write_files:
+- path: /opt/ndv-jitsi/install-preqreqs.sh
+  permissions: 0755
+  owner: root
+  content: |
+    #!/bin/bash -eu
+    set -o pipefail
+
+    apt -y update
+
+    DEBIAN_FRONTEND=noninteractive apt -y install awscli curl jq apt-transport-https
+    apt-add-repository universe
+
+    apt -y update
+
+- path: /opt/ndv-jitsi/get-tags.sh
+  permissions: 0755
+  owner: root
+  content: |
+    #!/bin/bash -eu
+    set -o pipefail
+    INSTANCE_ID=`curl -s http://instance-data/latest/meta-data/instance-id`
+    INSTANCE_REGION=`curl -s http://instance-data/latest/meta-data/placement/region`
+    aws ec2 describe-tags --region "$INSTANCE_REGION" --filters "Name=resource-id,Values=$INSTANCE_ID" > /opt/ndv-jitsi/instance-tags.json
+
+- path: /opt/ndv-jitsi/set-hostname.sh
+  permissions: 0755
+  owner: root
+  content: |
+    #!/bin/bash -eu
+    set -o pipefail
+
+    cd $(dirname "$0")
+
+    TAG_NAME=`jq -r '.Tags[]| select(.Key == "Name")|.Value' /opt/ndv-jitsi/instance-tags.json`
+    ZONE_ID="Z09102521YXWQT2ZKMPP7"
+    DOMAIN_NAME="aws.nextdayvideo.com.au"
+
+    FQ_HOSTNAME=$TAG_NAME.$DOMAIN_NAME
+
+    hostnamectl set-hostname $FQ_HOSTNAME
+
+    PUBLIC_IP=`curl -s curl -s http://instance-data/latest/meta-data/public-hostname`
+
+    cat <<token > /opt/ndv-jitsi/dns-bach.json
+    {
+            "Comment": "UPSERT jitsi-meet dns",
+            "Changes": [{
+                    "Action": "UPSERT",
+                    "ResourceRecordSet": {
+                            "Name": "$FQ_HOSTNAME",
+                            "Type": "CNAME",
+                            "TTL": 60,
+                            "ResourceRecords": [{ "Value": "$PUBLIC_IP"}]
+                    }
+            }]
+    }
+    token
+    aws route53 change-resource-record-sets --hosted-zone-id $ZONE_ID --change-batch file:///opt/ndv-jitsi/dns-bach.json
+    rm /opt/ndv-jitsi/dns-bach.json
+
+- path: /opt/ndv-jitsi/jicofo.conf.tmpl
+  permissions: 0644
+  owner: root
+  content: |
+    # Jicofo HOCON configuration. See reference.conf in /usr/share/jicofo/jicofo.jar for
+    # available options, syntax, and default values.
+    jicofo {
+      xmpp: {
+        client: {
+          client-proxy: focus.$JITSI_HOSTNAME
+        }
+        trusted-domains: [ "recorder.$JITSI_HOSTNAME" ]
+      }
+      bridge: {
+        brewery-jid: "JvbBrewery@internal.auth.$JITSI_HOSTNAME"
+      }
+      jibri: {
+        brewery-jid: "JibriBrewery@internal.auth.$JITSI_HOSTNAME"
+      }
+    }
+
+- path: /opt/ndv-jitsi/prosody-jibri-virtualhost.lua.tmpl
+  permissions: 0644
+  owner: root
+  content: |
+    -- Let jibri work
+    VirtualHost "$JIBRI_HOSTNAME"
+      modules_enabled = {
+        "ping";
+      }
+      authentication = "internal_plain"
+
+- path: /opt/ndv-jitsi/meet-config.js.tmpl
+  permissions: 0644
+  owner: root
+  content: |
+    var config = {
+      // Connection
+      //
+
+      hosts: {
+          // XMPP domain.
+          domain: '$JITSI_HOSTNAME',
+          muc: 'conference.<!--# echo var="subdomain" default="" -->$JITSI_HOSTNAME'
+      },
+
+      // BOSH URL. FIXME: use XEP-0156 to discover it.
+      bosh: '//$JITSI_HOSTNAME/http-bind',
+
+      // Testing / experimental features.
+      testing: {},
+
+      // Enabling this will run the lib-jitsi-meet no audio detection module which
+      // will notify the user if the current selected microphone has no audio
+      // input and will suggest another valid device if one is present.
+      enableNoAudioDetection: true,
+
+      // Enabling this will run the lib-jitsi-meet noise detection module which will
+      // notify the user if there is noise, other than voice, coming from the current
+      // selected microphone. The purpose it to let the user know that the input could
+      // be potentially unpleasant for other meeting participants.
+      enableNoisyMicDetection: true,
+
+      // Whether to enable live streaming or not.
+      // CHANGED FROM DEFAULT (commented out & false)
+      liveStreamingEnabled: true,
+
+      // Misc
+
+      // Default value for the channel "last N" attribute. -1 for unlimited.
+      channelLastN: -1,
+
+      // UI
+
+      // Disables responsive tiles.
+      // disableResponsiveTiles: false,
+
+      // Hides lobby button
+      // hideLobbyButton: false,
+
+      // Whether to use a welcome page or not. In case it's false a random room
+      // will be joined when no room is specified.
+      enableWelcomePage: true,
+
+      // Privacy
+      //
+
+      // If third party requests are disabled, no other server will be contacted.
+      // This means avatars will be locally generated and callstats integration
+      // will not function.
+      // disableThirdPartyRequests: false,
+
+
+      // Peer-To-Peer mode: used (if enabled) when there are just 2 participants.
+      //
+
+      p2p: {
+          enabled: true,
+          stunServers: [
+              // { urls: 'stun:$JITSI_HOSTNAME:3478' },
+              { urls: 'stun:meet-jit-si-turnrelay.jitsi.net:443' }
+          ]
+      },
+
+      analytics: {},
+
+      deploymentInfo: {},
+
+      // Disables storing the room name to the recents list
+      // doNotStoreRoom: true,
+
+      // List of undocumented settings used in lib-jitsi-meet
+      hiddenDomain: '$JIBRI_HOSTNAME',
+
+      /**
+      * Default interval (milliseconds) for triggering mouseMoved iframe API event
+      */
+      mouseMoveCallbackInterval: 1000,
+
+      makeJsonParserHappy: 'even if last key had a trailing comma'
+
+      // no configuration value should follow this line.
+    };
+
+
+- path: /opt/ndv-jitsi/set-jibri-config.py
+  permissions: 0755
+  owner: root
+  content: |
+    #!/usr/bin/env python3
+
+    import json
+    import sys
+
+    jibri_config = {
+      "control": {
+        "domain": sys.argv[1],
+        "username": sys.argv[2],
+        "password": sys.argv[3],
+      },
+      "call": {
+        "domain": sys.argv[4],
+        "username": sys.argv[5],
+        "password": sys.argv[6],
+      }
+    }
+
+    print(json.dumps(jibri_config))
+
+- path: /opt/ndv-jitsi/install-jitsi.sh
+  permissions: 0755
+  owner: root
+  content: |
+    #!/bin/bash -eu
+    set -o pipefail
+
+    cd $(dirname "$0")
+    
+    curl https://download.jitsi.org/jitsi-key.gpg.key | sh -c 'gpg --dearmor > /usr/share/keyrings/jitsi-keyring.gpg'
+    echo 'deb [signed-by=/usr/share/keyrings/jitsi-keyring.gpg] https://download.jitsi.org stable/' | tee /etc/apt/sources.list.d/jitsi-stable.list > /dev/null
+
+    # update all package sources
+    apt update
+
+    JVB_HOSTNAME=`hostname`
+
+    echo "jitsi-videobridge jitsi-videobridge/jvb-hostname string ${JVB_HOSTNAME}" | debconf-set-selections
+    echo "jitsi-meet-web-config jitsi-meet/cert-choice select 'Generate a new self-signed certificate (You will later get a chance to obtain a Let's encrypt certificate)'" | debconf-set-selections
+
+    apt-get --option=Dpkg::Options::=--force-confold --option=Dpkg::options::=--force-unsafe-io --assume-yes --quiet install jitsi-meet
+
+    TAG_NAME=`jq -r '.Tags[]| select(.Key == "letsencrypt:email")|.Value' /opt/ndv-jitsi/instance-tags.json`
+
+    echo "$TAG_NAME" | /usr/share/jitsi-meet/scripts/install-letsencrypt-cert.sh
+
+    # make jvb2 actually work.
+
+    update-ca-certificates -f
+    systemctl restart jitsi-videobridge2.service
+
+    echo Configuring jicofo and prosody for jibri...
+
+    JITSI_HOSTNAME="$JVB_HOSTNAME" envsubst < /opt/ndv-jitsi/jicofo.conf.tmpl > /etc/jitsi/jicofo/jicofo.conf
+    JIBRI_HOSTNAME=recorder.$JVB_HOSTNAME envsubst < /opt/ndv-jitsi/prosody-jibri-virtualhost.lua.tmpl >> "/etc/prosody/conf.d/$JVB_HOSTNAME.cfg.lua"
+
+    systemctl restart prosody
+    systemctl restart jicofo
+
+    echo Creating passwords for jibri...
+
+    INSTANCE_REGION=`curl -s http://instance-data/latest/meta-data/placement/region`
+    JIBRI_CONTROL_LOGIN_PASSWORD=$(aws secretsmanager get-random-password --exclude-punctuation --no-include-space --output text --region "$INSTANCE_REGION")
+    JIBRI_CALL_LOGIN_PASSWORD=$(aws secretsmanager get-random-password --exclude-punctuation --no-include-space --output text --region "$INSTANCE_REGION")
+
+    prosodyctl register jibri "auth.$JVB_HOSTNAME" "$JIBRI_CONTROL_LOGIN_PASSWORD"
+    prosodyctl register recorder "recorder.$JVB_HOSTNAME" "$JIBRI_CALL_LOGIN_PASSWORD"
+  
+    echo Storing jibri config in Parameter Store...
+
+    JIBRI_CONFIG_PARAMETER=`/opt/ndv-jitsi/set-jibri-config.py "auth.$JVB_HOSTNAME" jibri "$JIBRI_CONTROL_LOGIN_PASSWORD" "recorder.$JVB_HOSTNAME" recorder "$JIBRI_CALL_LOGIN_PASSWORD"`
+
+    aws ssm put-parameter \
+      --region "$INSTANCE_REGION" \
+      --name /jitsi/"$JVB_HOSTNAME" \
+      --type SecureString \
+      --value "$JIBRI_CONFIG_PARAMETER" \
+      --overwrite
+    
+    echo Lastly tell meet about jibri...
+
+    MEET_CONFIG=/etc/jitsi/meet/${JVB_HOSTNAME}-config.js
+
+    JITSI_HOSTNAME="$JVB_HOSTNAME" JIBRI_HOSTNAME=recorder.$JVB_HOSTNAME envsubst < /opt/ndv-jitsi/meet-config.js.tmpl > "$MEET_CONFIG"
+
+    echo and we are all done, have a great day!
+
+
+runcmd:
+- /opt/ndv-jitsi/install-preqreqs.sh
+- /opt/ndv-jitsi/get-tags.sh
+- /opt/ndv-jitsi/set-hostname.sh
+- /opt/ndv-jitsi/install-jitsi.sh
+
