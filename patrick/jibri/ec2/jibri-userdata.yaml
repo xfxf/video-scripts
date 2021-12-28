@@ -15,56 +15,72 @@ write_files:
     owner: root
     content: |
       jibri {
-          recording {
-              recordings-directory = "/srv/recordings"
-              finalize-script = ""
-          }
+        recording {
+          recordings-directory = "/srv/recordings"
+          finalize-script = ""
+        }
 
-          chrome {
-              flags = [
-                  "--use-fake-ui-for-media-stream",
-                  "--start-maximized",
-                  "--kiosk",
-                  "--enabled",
-                  "--disable-infobars",
-                  "--autoplay-policy=no-user-gesture-required",
-              ]
-          }
+        chrome {
+          flags = [
+            "--use-fake-ui-for-media-stream",
+            "--start-maximized",
+            "--kiosk",
+            "--enabled",
+            "--disable-infobars",
+            "--autoplay-policy=no-user-gesture-required",
+          ]
+        }
 
-          api {
-              xmpp {
-                  environments = [
-                      {
-                          name = "prod environment"
-                          xmpp-server-hosts = ["$JITSI_MEET_HOST"]
-                          xmpp-domain = "$JITSI_MEET_HOST"
+        call-status-checks {
+          // If all clients have their audio and video muted and if Jibri does not
+          // detect any data stream (audio or video) comming in, it will stop
+          // recording after NO_MEDIA_TIMEOUT expires.
+          no-media-timeout = 30 seconds
 
-                          control-muc {
-                              domain = "internal.auth.$JITSI_MEET_HOST"
-                              room-name = "JibriBrewery"
-                              nickname = "jibri-nickname"
-                          }
+          // If all clients have their audio and video muted, Jibri consideres this
+          // as an empty call and stops the recording after ALL_MUTED_TIMEOUT expires.
+          all-muted-timeout = 10 minutes
 
-                          control-login {
-                              domain = "$JIBRI_CONTROL_LOGIN_DOMAIN"
-                              username = "$JIBRI_CONTROL_LOGIN_USERNAME"
-                              password = "$JIBRI_CONTROL_LOGIN_PASSWORD"
-                          }
+          // When detecting if a call is empty, Jibri takes into consideration for how
+          // long the call has been empty already. If it has been empty for more than
+          // DEFAULT_CALL_EMPTY_TIMEOUT, it will consider it empty and stop the recording.
+          default-call-empty-timeout = 30 seconds
+        }
 
-                          call-login {
-                              domain = "$JIBRI_CALL_LOGIN_DOMAIN"
-                              username = "$JIBRI_CALL_LOGIN_USERNAME"
-                              password = "$JIBRI_CALL_LOGIN_PASSWORD"
-                          }
+        api {
+          xmpp {
+            environments = [
+              {
+                name = "prod environment"
+                xmpp-server-hosts = ["$JITSI_MEET_HOST"]
+                xmpp-domain = "$JITSI_MEET_HOST"
 
-                          strip-from-room-domain = "conference."
-                          usage-timeout = "0"
+                control-muc {
+                  domain = "internal.auth.$JITSI_MEET_HOST"
+                  room-name = "JibriBrewery"
+                  nickname = "jibri-nickname"
+                }
 
-                          trust-all-xmpp-certs = true
-                      }
-                  ]
+                control-login {
+                  domain = "$JIBRI_CONTROL_LOGIN_DOMAIN"
+                  username = "$JIBRI_CONTROL_LOGIN_USERNAME"
+                  password = "$JIBRI_CONTROL_LOGIN_PASSWORD"
+                }
+
+                call-login {
+                  domain = "$JIBRI_CALL_LOGIN_DOMAIN"
+                  username = "$JIBRI_CALL_LOGIN_USERNAME"
+                  password = "$JIBRI_CALL_LOGIN_PASSWORD"
+                }
+
+                strip-from-room-domain = "conference."
+                usage-timeout = "0"
+
+                trust-all-xmpp-certs = true
               }
+            ]
           }
+        }
       }
 
   - path: /opt/ndv-jitsi/install-jibri.sh
