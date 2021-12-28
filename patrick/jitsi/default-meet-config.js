@@ -4,31 +4,31 @@ var config = {
 
   hosts: {
       // XMPP domain.
-      domain: 'jitsi-meet-tests9.aws.nextdayvideo.com.au',
+      domain: 'my-jitsi-host.example',
 
       // When using authentication, domain for guest users.
       // anonymousdomain: 'guest.example.com',
 
       // Domain for authenticated users. Defaults to <domain>.
-      // authdomain: 'jitsi-meet-tests9.aws.nextdayvideo.com.au',
+      // authdomain: 'my-jitsi-host.example',
 
       // Focus component domain. Defaults to focus.<domain>.
-      // focus: 'focus.jitsi-meet-tests9.aws.nextdayvideo.com.au',
+      // focus: 'focus.my-jitsi-host.example',
 
       // XMPP MUC domain. FIXME: use XEP-0030 to discover it.
-      muc: 'conference.<!--# echo var="subdomain" default="" -->jitsi-meet-tests9.aws.nextdayvideo.com.au'
+      muc: 'conference.<!--# echo var="subdomain" default="" -->my-jitsi-host.example'
   },
 
   // BOSH URL. FIXME: use XEP-0156 to discover it.
-  bosh: '//jitsi-meet-tests9.aws.nextdayvideo.com.au/http-bind',
+  bosh: '//my-jitsi-host.example/http-bind',
 
   // Websocket URL
-  // websocket: 'wss://jitsi-meet-tests9.aws.nextdayvideo.com.au/xmpp-websocket',
+  // websocket: 'wss://my-jitsi-host.example/xmpp-websocket',
 
   // The real JID of focus participant - can be overridden here
   // Do not change username - FIXME: Make focus username configurable
   // https://github.com/jitsi/jitsi-meet/issues/7376
-  // focusUserJid: 'focus@auth.jitsi-meet-tests9.aws.nextdayvideo.com.au',
+  // focusUserJid: 'focus@auth.my-jitsi-host.example',
 
 
   // Testing / experimental features.
@@ -234,9 +234,9 @@ var config = {
   //     appKey: '<APP_KEY>' // Specify your app key here.
   //     // A URL to redirect the user to, after authenticating
   //     // by default uses:
-  //     // 'https://jitsi-meet-tests9.aws.nextdayvideo.com.au/static/oauth.html'
+  //     // 'https://my-jitsi-host.example/static/oauth.html'
   //     redirectURI:
-  //          'https://jitsi-meet-tests9.aws.nextdayvideo.com.au/subfolder/static/oauth.html'
+  //          'https://my-jitsi-host.example/subfolder/static/oauth.html'
   // },
   // When integrations like dropbox are enabled only that will be shown,
   // by enabling fileRecordingsServiceEnabled, we show both the integrations
@@ -739,7 +739,7 @@ var config = {
       // The STUN servers that will be used in the peer to peer connections
       stunServers: [
 
-          // { urls: 'stun:jitsi-meet-tests9.aws.nextdayvideo.com.au:3478' },
+          // { urls: 'stun:my-jitsi-host.example:3478' },
           { urls: 'stun:meet-jit-si-turnrelay.jitsi.net:443' }
       ]
   },
@@ -997,7 +997,7 @@ var config = {
   // The URL of the moderated rooms microservice, if available. If it
   // is present, a link to the service will be rendered on the welcome page,
   // otherwise the app doesn't render it.
-  // moderatedRoomServiceUrl: 'https://moderated.jitsi-meet-tests9.aws.nextdayvideo.com.au',
+  // moderatedRoomServiceUrl: 'https://moderated.my-jitsi-host.example',
 
   // If true, tile view will not be enabled automatically when the participants count threshold is reached.
   // disableTileView: true,
