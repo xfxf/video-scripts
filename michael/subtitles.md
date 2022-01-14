@@ -56,15 +56,19 @@
 
   * _Pop-on:_ incoming text is pushed to an off-screen buffer, and then swapped on cue.
 
-    This is used for pre-recorded content.
+    This is used for pre-recorded content - it sends text _before_ it is spoken, then swapped when it should be shown.
 
-  * _Roll-up:_ incoming text is displayed immediately on-screen as it arrives.  "Roll-up" is what happens on a carriage return:
+  * _Roll-up:_ incoming text is displayed immediately.  "Roll-up" is what happens on a carriage return:
 
     * The top line is deleted.
     * All other lines are moved up by 1 line (up to 4 lines), with a nice smooth animation as the new text comes in.
     * New text is added on the bottom line.
     
     This is used for live content.
+
+  * _Paint-on:_ incoming text is displayed immediately. There is no fancy stuff, you are drawing on a character buffer.
+
+    I think this is intended for some Teletext-like information service?
 
 * _I mentioned transcoding!_ YouTube and Mux turn this into TTML and WebVTT respectively.
 
@@ -80,6 +84,15 @@
 
   * Colours and font styles are unsupported. WebVTT could support this, but Mux doesn't implement it.
   * On WebVTT, there is no roll-up animation.
+
+* Also, _your captions can time travel_! When you have your captions inserted at the _end_ of your pipeline, you can delay audio and video until the captions are ready:
+
+  * Incoming video and audio goes into a 5 second ring-buffer.
+  * Captioner writes out the words in the buffer (a few seconds late)
+  * The captioner's inputs are encoded into the video bitstream, at an _earlier_ point in the ring buffer (so it appears at the correct time). Because this doesn't need transcoding, it's very fast!
+  * The final muxed output is then delivered for broadcast to viewers.
+
+  Caption users aren't ever waiting at that point, because all viewers see the program after the ring buffer.
 
 Useful links:
 
