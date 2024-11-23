@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Cut List
+Comment=
+Exec=xfce4-terminal --title="cut list" --geometry=20x5 --hide-menubar --command="/home/videoteam/timestamper/timestamp.py /srv/video/recordings/green/cutlist.log"
+Icon=edit-cut
+Path=
+Terminal=false
+StartupNotify=false
