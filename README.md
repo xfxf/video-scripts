@@ -1,2 +1,4 @@
 # video-scripts
-random scripts for streaming/capture.  used at LCA2016, need cleaning up, but will help others wanting to use voctomix/dvswitch with or without HDMI2USB.
+random scripts for streaming/capture used at events
+
+consider this the garbage bin of random scripts, files and misc items which have some usage, but aren't polished enough to warrant their own distro
