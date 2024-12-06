@@ -1,0 +1,81 @@
+logLevel: info
+logDestinations: [stdout]
+logFile: mediamtx.log
+
+readTimeout: 10s
+writeTimeout: 10s
+writeQueueSize: 512
+udpMaxPayloadSize: 1472
+runOnConnect:
+runOnConnectRestart: no
+runOnDisconnect:
+
+authMethod: internal
+authInternalUsers:
+- user: any
+  pass:
+  ips: []
+  permissions:
+  - action: publish
+    path:
+  - action: read
+    path:
+  - action: playback
+    path:
+
+- user: any
+  pass:
+  ips: ['127.0.0.1', '::1']
+  permissions:
+  - action: api
+  - action: metrics
+  - action: pprof
+
+authHTTPAddress:
+authHTTPExclude:
+- action: api
+- action: metrics
+- action: pprof
+
+authJWTJWKS:
+authJWTClaimKey: mediamtx_permissions
+
+api: no
+metrics: no
+pprof: no
+playback: no
+rtsp: no
+rtmp: yes
+rtmpAddress: :1935
+rtmpEncryption: "no"
+
+hls: yes
+hlsAddress: :80
+hlsEncryption: no
+hlsAllowOrigin: '*'
+hlsTrustedProxies: []
+hlsAlwaysRemux: yes
+hlsVariant: lowLatency
+hlsSegmentCount: 7
+hlsSegmentDuration: 1s
+hlsPartDuration: 1s
+hlsSegmentMaxSize: 100M
+hlsDirectory: ''
+hlsMuxerCloseAfter: 120s
+
+webrtc: no
+srt: no
+
+pathDefaults:
+  source: publisher
+  sourceOnDemand: no
+  sourceOnDemandStartTimeout: 10s
+  sourceOnDemandCloseAfter: 10s
+  maxReaders: 0
+  fallback:
+
+  record: no
+  overridePublisher: no
+
+paths:
+  all_others:
